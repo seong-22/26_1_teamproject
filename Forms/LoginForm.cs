@@ -122,7 +122,6 @@ namespace BILCAM.Forms
             pnl.Controls.AddRange(new Control[] { lblLogo, lblSub, div, lblId, txtId, lblPw, txtPw, lblError, btnLogin, btnReg, hint });
             this.Controls.Add(pnl);
         }
-
         private void DoLogin()
         {
             string id = txtId.Text.Trim();
@@ -133,31 +132,36 @@ namespace BILCAM.Forms
                 return;
             }
 
-            string hash = DatabaseHelper.HashPassword(pw);
-            var dt = DatabaseHelper.ExecuteQuery(
-                "SELECT * FROM Users WHERE UserId=@id AND PasswordHash=@pw",
-                new System.Data.SQLite.SQLiteParameter("@id", id),
-                new System.Data.SQLite.SQLiteParameter("@pw", hash));
-
-            if (dt.Rows.Count == 0)
+            try
             {
-                lblError.Text = "아이디 또는 비밀번호가 올바르지 않습니다.";
-                return;
+                string hash = DatabaseHelper.HashPassword(pw);
+                var dt = DatabaseHelper.ExecuteQuery(
+                    $"SELECT * FROM users WHERE userid='{id}' AND passwordhash='{hash}'");
+
+                if (dt.Rows.Count == 0)
+                {
+                    lblError.Text = "아이디 또는 비밀번호가 올바르지 않습니다.";
+                    return;
+                }
+
+                var row = dt.Rows[0];
+                var user = new User
+                {
+                    Id = Convert.ToInt32(row["id"]),
+                    UserId = row["userid"].ToString(),
+                    Name = row["name"].ToString(),
+                    Role = row["role"].ToString()
+                };
+
+                this.Hide();
+                Form next = user.IsAdmin ? (Form)new AdminMainForm(user) : new StudentMainForm(user);
+                next.FormClosed += (s, e) => this.Show();
+                next.Show();
             }
-
-            var row = dt.Rows[0];
-            var user = new User
+            catch (Exception ex)
             {
-                Id = Convert.ToInt32(row["Id"]),
-                UserId = row["UserId"].ToString(),
-                Name = row["Name"].ToString(),
-                Role = row["Role"].ToString()
-            };
-
-            this.Hide();
-            Form next = user.IsAdmin ? (Form)new AdminMainForm(user) : new StudentMainForm(user);
-            next.FormClosed += (s, e) => this.Show();
-            next.Show();
+                MessageBox.Show("오류: " + ex.Message);
+            }
         }
     }
 }
