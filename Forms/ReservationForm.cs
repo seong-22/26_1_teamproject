@@ -199,10 +199,10 @@ namespace BILCAM.Forms
         {
             _takenSlots.Clear();
             var dt = DatabaseHelper.ExecuteQuery(
-                @"SELECT StartTime FROM Reservations
+                @"SELECT StartTime FROM reservations
                   WHERE ResourceId=@rid AND ReservationDate=@date AND Status != 'rejected'",
-                new System.Data.SQLite.SQLiteParameter("@rid", _resourceId),
-                new System.Data.SQLite.SQLiteParameter("@date", date.ToString("yyyy-MM-dd")));
+                new Npgsql.NpgsqlParameter("@rid", _resourceId),
+                new Npgsql.NpgsqlParameter("@date", date.ToString("yyyy-MM-dd")));
 
             foreach (DataRow row in dt.Rows)
                 _takenSlots.Add(row["StartTime"].ToString());
@@ -285,13 +285,13 @@ namespace BILCAM.Forms
 
             // 중복 예약 방지
             var check = DatabaseHelper.ExecuteQuery(
-                @"SELECT Id FROM Reservations
+                @"SELECT Id FROM reservations
                   WHERE ResourceId=@rid AND ReservationDate=@date AND Status != 'rejected'
                     AND @start < EndTime AND @end > StartTime",
-                new System.Data.SQLite.SQLiteParameter("@rid", _resourceId),
-                new System.Data.SQLite.SQLiteParameter("@date", dateStr),
-                new System.Data.SQLite.SQLiteParameter("@start", _selectedSlot),
-                new System.Data.SQLite.SQLiteParameter("@end", endTime));
+                new Npgsql.NpgsqlParameter("@rid", _resourceId),
+                new Npgsql.NpgsqlParameter("@date", dateStr),
+                new Npgsql.NpgsqlParameter("@start", _selectedSlot),
+                new Npgsql.NpgsqlParameter("@end", endTime));
 
             if (check.Rows.Count > 0)
             {
@@ -302,15 +302,15 @@ namespace BILCAM.Forms
             }
 
             DatabaseHelper.ExecuteNonQuery(
-                @"INSERT INTO Reservations
+                @"INSERT INTO reservations
                     (UserId, ResourceId, ReservationDate, StartTime, EndTime, Status, CreatedAt)
                   VALUES (@uid, @rid, @date, @start, @end, 'pending', @now)",
-                new System.Data.SQLite.SQLiteParameter("@uid", _user.UserId),
-                new System.Data.SQLite.SQLiteParameter("@rid", _resourceId),
-                new System.Data.SQLite.SQLiteParameter("@date", dateStr),
-                new System.Data.SQLite.SQLiteParameter("@start", _selectedSlot),
-                new System.Data.SQLite.SQLiteParameter("@end", endTime),
-                new System.Data.SQLite.SQLiteParameter("@now", DateTime.Now.ToString()));
+                new Npgsql.NpgsqlParameter("@uid", _user.UserId),
+                new Npgsql.NpgsqlParameter("@rid", _resourceId),
+                new Npgsql.NpgsqlParameter("@date", dateStr),
+                new Npgsql.NpgsqlParameter("@start", _selectedSlot),
+                new Npgsql.NpgsqlParameter("@end", endTime),
+                new Npgsql.NpgsqlParameter("@now", DateTime.Now.ToString()));
 
             MessageBox.Show("예약 신청이 완료되었습니다!\n관리자 승인 후 확정됩니다.", "BILCAM",
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
