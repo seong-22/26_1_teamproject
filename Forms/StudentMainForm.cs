@@ -114,13 +114,22 @@ namespace BILCAM.Forms
 
             this.Controls.Add(_tabs);
             this.Controls.Add(header);
+            // 30초마다 자동 새로고침 (Supabase 실시간 동기화)
+            var refreshTimer = new System.Windows.Forms.Timer();
+            refreshTimer.Interval = 30000;
+            refreshTimer.Tick += (s, e) =>
+            {
+                if (_tabs.SelectedIndex == 0) LoadResources();
+                else LoadMyReservations();
+            };
+            refreshTimer.Start();
         }
 
         // ── Resources ──────────────────────────────────────────────────────
         private void LoadResources()
         {
             _pnlResources.Controls.Clear();
-            var dt = DatabaseHelper.ExecuteQuery("SELECT * FROM Resources ORDER BY Category, Id");
+            var dt = DatabaseHelper.ExecuteQuery("SELECT * FROM resources ORDER BY Category, Id");
 
             string currentCat = "";
             foreach (DataRow row in dt.Rows)
@@ -225,10 +234,10 @@ namespace BILCAM.Forms
         {
             _pnlMyRes.Controls.Clear();
             var dt = DatabaseHelper.ExecuteQuery(
-                @"SELECT r.*, res.Name as ResourceName FROM Reservations r
-                  JOIN Resources res ON r.ResourceId = res.Id
+                @"SELECT r.*, res.Name as ResourceName FROM reservations r
+                  JOIN resources res ON r.ResourceId = res.Id
                   WHERE r.UserId = @uid ORDER BY r.ReservationDate DESC",
-                new System.Data.SQLite.SQLiteParameter("@uid", _user.UserId));
+                new Npgsql.NpgsqlParameter("@uid", _user.UserId));
 
             if (dt.Rows.Count == 0)
             {
@@ -306,8 +315,8 @@ namespace BILCAM.Forms
                 {
                     if (MessageBox.Show("예약을 취소하시겠습니까?", "확인", MessageBoxButtons.YesNo) == DialogResult.Yes)
                     {
-                        DatabaseHelper.ExecuteNonQuery("DELETE FROM Reservations WHERE Id=@id",
-                            new System.Data.SQLite.SQLiteParameter("@id", id));
+                        DatabaseHelper.ExecuteNonQuery("DELETE FROM reservations WHERE Id=@id",
+                            new Npgsql.NpgsqlParameter("@id", id));
                         LoadMyReservations();
                     }
                 };
