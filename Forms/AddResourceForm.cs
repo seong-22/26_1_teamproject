@@ -76,10 +76,10 @@ namespace BILCAM.Forms
             string cat = cats[cboCategory.SelectedIndex];
 
             DatabaseHelper.ExecuteNonQuery(
-                "INSERT INTO Resources (Name, Category, Location, IsAvailable) VALUES (@n, @c, @l, 1)",
-                new System.Data.SQLite.SQLiteParameter("@n", name),
-                new System.Data.SQLite.SQLiteParameter("@c", cat),
-                new System.Data.SQLite.SQLiteParameter("@l", loc));
+                "INSERT INTO resources (Name, Category, Location, IsAvailable) VALUES (@n, @c, @l, 1)",
+                new Npgsql.NpgsqlParameter("@n", name),
+                new Npgsql.NpgsqlParameter("@c", cat),
+                new Npgsql.NpgsqlParameter("@l", loc));
 
             this.DialogResult = DialogResult.OK;
             this.Close();
