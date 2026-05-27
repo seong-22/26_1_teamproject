@@ -17,15 +17,16 @@ namespace BILCAM.Forms
         private MonthCalendar _calendar;
         private Panel _slotPanel;
         private Label _lblSelectedSlot;
+        private Label _lblDateWarning;
         private string _selectedSlot;
         private List<string> _takenSlots = new List<string>();
+        private List<DateTime> _takenDates = new List<DateTime>();
 
         private static readonly string[] ALL_SLOTS = {
             "09:00","10:00","11:00","12:00","13:00",
             "14:00","15:00","16:00","17:00","18:00"
         };
 
-        // 강의실만 시간 선택, 노트북/우산은 날짜만
         private bool IsDateOnly => _resourceCategory == "laptop" || _resourceCategory == "umbrella";
 
         public ReservationForm(User user, int resourceId, string resourceName, string resourceCategory)
@@ -35,14 +36,17 @@ namespace BILCAM.Forms
             _resourceName = resourceName;
             _resourceCategory = resourceCategory;
             InitializeComponent();
-            if (!IsDateOnly)
+
+            if (IsDateOnly)
+                LoadTakenDates();
+            else
                 LoadTakenSlots(DateTime.Today);
         }
 
         private void InitializeComponent()
         {
             this.Text = $"예약 신청 — {_resourceName}";
-            this.Size = IsDateOnly ? new Size(560, 460) : new Size(560, 620);
+            this.Size = IsDateOnly ? new Size(560, 480) : new Size(560, 620);
             this.MinimumSize = this.Size;
             this.StartPosition = FormStartPosition.CenterParent;
             this.BackColor = Theme.BgSecondary;
@@ -74,7 +78,7 @@ namespace BILCAM.Forms
             var inner = new Panel
             {
                 Width = 500,
-                Height = IsDateOnly ? 360 : 530,
+                Height = IsDateOnly ? 380 : 530,
                 Location = new Point(0, 0),
                 BackColor = Theme.BgSecondary
             };
@@ -102,20 +106,57 @@ namespace BILCAM.Forms
                 ShowToday = true,
                 Font = Theme.FontSmall
             };
-            _calendar.DateChanged += (s, e) =>
+
+            if (IsDateOnly)
             {
-                if (!IsDateOnly)
+                _calendar.DateChanged += (s, e) =>
+                {
+                    DateTime selected = _calendar.SelectionStart;
+                    bool isTaken = _takenDates.Contains(selected.Date);
+
+                    if (isTaken)
+                    {
+                        _lblDateWarning.Text = "이미 예약된 날짜입니다. 다른 날짜를 선택해주세요.";
+                        _lblDateWarning.ForeColor = Theme.Danger;
+                    }
+                    else
+                    {
+                        _lblDateWarning.Text = "예약 가능한 날짜입니다.";
+                        _lblDateWarning.ForeColor = Theme.Success;
+                    }
+                };
+            }
+            else
+            {
+                _calendar.DateChanged += (s, e) =>
                 {
                     _selectedSlot = null;
                     if (_lblSelectedSlot != null)
                         _lblSelectedSlot.Text = "선택된 시간: 없음";
                     LoadTakenSlots(_calendar.SelectionStart);
-                }
-            };
-            inner.Controls.Add(_calendar);
-            y += _calendar.Height + 16;
+                };
+            }
 
-            if (!IsDateOnly)
+            inner.Controls.Add(_calendar);
+            y += _calendar.Height + 10;
+
+            if (IsDateOnly)
+            {
+                
+
+                // 날짜 상태 안내
+                _lblDateWarning = new Label
+                {
+                    Text = "날짜를 선택해주세요.",
+                    Font = Theme.FontSmall,
+                    ForeColor = Theme.TextSecondary,
+                    Location = new Point(0, y),
+                    AutoSize = true
+                };
+                inner.Controls.Add(_lblDateWarning);
+                y += 28;
+            }
+            else
             {
                 // 시간대 라벨
                 inner.Controls.Add(new Label
@@ -167,19 +208,6 @@ namespace BILCAM.Forms
                 inner.Controls.Add(_lblSelectedSlot);
                 y += 30;
             }
-            else
-            {
-                // 날짜만 선택하는 경우 안내 문구
-                inner.Controls.Add(new Label
-                {
-                    Text = "※ 하루 단위로 대여됩니다.",
-                    Font = Theme.FontSmall,
-                    ForeColor = Theme.TextSecondary,
-                    Location = new Point(0, y),
-                    AutoSize = true
-                });
-                y += 30;
-            }
 
             // 예약 신청 버튼
             var btnSubmit = new Button
@@ -216,6 +244,31 @@ namespace BILCAM.Forms
             };
         }
 
+        // 날짜만 선택 모드 — 예약된 날짜 로드 후 굵게 표시
+        private void LoadTakenDates()
+        {
+            _takenDates.Clear();
+            var dt = DatabaseHelper.ExecuteQuery(
+                $"SELECT reservationdate FROM reservations WHERE resourceid={_resourceId} AND status != 'rejected'");
+
+            _calendar.BoldedDates = null;
+            List<DateTime> boldDates = new List<DateTime>();
+
+            foreach (DataRow row in dt.Rows)
+            {
+                if (DateTime.TryParse(row["reservationdate"].ToString(), out DateTime d))
+                {
+                    _takenDates.Add(d.Date);
+                    boldDates.Add(d.Date);
+                }
+            }
+
+            // 예약된 날짜 굵게 표시
+            _calendar.BoldedDates = boldDates.ToArray();
+            _calendar.UpdateBoldedDates();
+        }
+
+        // 시간 선택 모드 — 예약된 시간 슬롯 로드
         private void LoadTakenSlots(DateTime date)
         {
             _takenSlots.Clear();
@@ -295,13 +348,10 @@ namespace BILCAM.Forms
 
             if (IsDateOnly)
             {
-                // 날짜만 선택 (노트북/우산) — 하루 단위 중복 확인
-                var check = DatabaseHelper.ExecuteQuery(
-                    $"SELECT id FROM reservations WHERE resourceid={_resourceId} AND reservationdate='{dateStr}' AND status != 'rejected'");
-
-                if (check.Rows.Count > 0)
+                // 예약된 날짜 선택 시 막기
+                if (_takenDates.Contains(_calendar.SelectionStart.Date))
                 {
-                    MessageBox.Show("해당 날짜는 이미 예약되어 있습니다.", "BILCAM",
+                    MessageBox.Show("이미 예약된 날짜입니다. 다른 날짜를 선택해주세요.", "BILCAM",
                         MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
@@ -312,7 +362,6 @@ namespace BILCAM.Forms
             }
             else
             {
-                // 시간 선택 (강의실)
                 if (_selectedSlot == null)
                 {
                     MessageBox.Show("시간대를 선택하세요.", "BILCAM",
