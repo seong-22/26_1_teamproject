@@ -265,7 +265,7 @@ namespace BILCAM.Forms
             var card = new Panel
             {
                 Width = cardWidth,
-                Height = status == "pending" ? 90 : 72,
+                Height = (status == "pending" || status == "approved") ? 90 : 72,
                 BackColor = Theme.BgPrimary,
                 Margin = new Padding(2, 0, 2, 6)
             };
@@ -301,7 +301,7 @@ namespace BILCAM.Forms
 
             card.Controls.AddRange(new Control[] { lblName, lblDetail, badge });
 
-            if (status == "pending")
+            if (status == "pending" || status == "approved")
             {
                 var btnCancel = new Button
                 {

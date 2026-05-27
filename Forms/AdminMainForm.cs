@@ -31,7 +31,7 @@ namespace BILCAM.Forms
             this.AutoScaleDimensions = new SizeF(96F, 96F);
 
             // Header
-            var header = new Panel { Dock = DockStyle.Top, Height = 52, BackColor = Color.FromArgb(24, 60, 137) };
+            var header = new Panel { Dock = DockStyle.Top, Height = 52, BackColor = Color.FromArgb(139, 30, 20) };
             var lblTitle = new Label
             {
                 Text = "BILCAM  관리자 패널",
@@ -45,12 +45,13 @@ namespace BILCAM.Forms
                 Text = "로그아웃",
                 Font = Theme.FontSmall,
                 FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(60, 100, 180),
+                BackColor = Color.FromArgb(139, 30, 20),
                 ForeColor = Color.White,
                 Size = new Size(72, 26),
                 Cursor = Cursors.Hand
             };
-            btnLogout.FlatAppearance.BorderSize = 0;
+            btnLogout.FlatAppearance.BorderSize = 1;
+            btnLogout.FlatAppearance.BorderColor = Color.White;
             btnLogout.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnLogout.Click += (s, e) => this.Close();
 
@@ -232,7 +233,7 @@ namespace BILCAM.Forms
 
             var badge = new Label
             {
-                Text = avail ? "  가용  " : "  사용 중  ",
+                Text = avail ? " 사용 가능 " : "  사용 불가  ",
                 Font = Theme.FontSmall,
                 BackColor = avail ? Theme.SuccessLight : Theme.DangerLight,
                 ForeColor = avail ? Theme.Success : Theme.Danger,
@@ -242,7 +243,7 @@ namespace BILCAM.Forms
                 Anchor = AnchorStyles.Top | AnchorStyles.Right
             };
 
-            var btnToggle = Theme.MakeButton(avail ? "사용 중으로 변경" : "가용으로 변경", Theme.BgSecondary, Theme.TextSecondary, 140, 26);
+            var btnToggle = Theme.MakeButton(avail ? "사용 불가로 변경" : "사용 가능으로 변경", Theme.BgSecondary, Theme.TextSecondary, 160, 26);
             btnToggle.Location = new Point(14, 48);
             btnToggle.Click += (s, e) =>
             {

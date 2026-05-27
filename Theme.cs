@@ -6,8 +6,8 @@ namespace BILCAM
     public static class Theme
     {
         // Colors
-        public static Color Primary      = Color.FromArgb(24, 95, 165);   // Blue
-        public static Color PrimaryLight = Color.FromArgb(230, 241, 251);
+        public static Color Primary = Color.FromArgb(139, 30, 20);   // Red
+        public static Color PrimaryLight = Color.FromArgb(245, 220, 218);
         public static Color Success      = Color.FromArgb(15, 110, 86);
         public static Color SuccessLight = Color.FromArgb(225, 245, 238);
         public static Color Warning      = Color.FromArgb(133, 79, 11);
