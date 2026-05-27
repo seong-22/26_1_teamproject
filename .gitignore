@@ -1,0 +1,14 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Build output
+bin/
+obj/
+
+# SQLite DB 파일
+*.db
+
+# 솔루션 파일 (선택사항)
+*.sln
