@@ -79,6 +79,15 @@ namespace BILCAM.Forms
 
             this.Controls.Add(_tabs);
             this.Controls.Add(header);
+            // 30초마다 자동 새로고침 (Supabase 실시간 동기화)
+            var refreshTimer = new System.Windows.Forms.Timer();
+            refreshTimer.Interval = 30000;
+            refreshTimer.Tick += (s, e) =>
+            {
+                if (_tabs.SelectedIndex == 0) LoadPending();
+                else if (_tabs.SelectedIndex == 1) LoadAll();
+            };
+            refreshTimer.Start();
         }
 
         private FlowLayoutPanel MakeFlowPanel() => new FlowLayoutPanel
@@ -95,8 +104,8 @@ namespace BILCAM.Forms
         {
             _pnlPending.Controls.Clear();
             var dt = DatabaseHelper.ExecuteQuery(
-                @"SELECT r.*, res.Name as ResourceName FROM Reservations r
-                  JOIN Resources res ON r.ResourceId = res.Id
+                @"SELECT r.*, res.Name as ResourceName FROM reservations r
+                  JOIN resources res ON r.ResourceId = res.Id
                   WHERE r.Status = 'pending' ORDER BY r.ReservationDate, r.StartTime");
 
             if (dt.Rows.Count == 0)
@@ -148,8 +157,8 @@ namespace BILCAM.Forms
         {
             _pnlAll.Controls.Clear();
             var dt = DatabaseHelper.ExecuteQuery(
-                @"SELECT r.*, res.Name as ResourceName FROM Reservations r
-                  JOIN Resources res ON r.ResourceId = res.Id
+                @"SELECT r.*, res.Name as ResourceName FROM reservations r
+                  JOIN resources res ON r.ResourceId = res.Id
                   ORDER BY r.ReservationDate DESC");
 
             if (dt.Rows.Count == 0) { _pnlAll.Controls.Add(MakeEmptyLabel("예약 내역이 없습니다.")); return; }
@@ -196,7 +205,7 @@ namespace BILCAM.Forms
             };
             _pnlItems.Controls.Add(btnAdd);
 
-            var dt = DatabaseHelper.ExecuteQuery("SELECT * FROM Resources ORDER BY Category, Id");
+            var dt = DatabaseHelper.ExecuteQuery("SELECT * FROM resources ORDER BY Category, Id");
             foreach (DataRow row in dt.Rows)
                 _pnlItems.Controls.Add(BuildItemCard(row));
         }
@@ -229,9 +238,9 @@ namespace BILCAM.Forms
             btnToggle.Location = new Point(14, 48);
             btnToggle.Click += (s, e) =>
             {
-                DatabaseHelper.ExecuteNonQuery("UPDATE Resources SET IsAvailable=@v WHERE Id=@id",
-                    new System.Data.SQLite.SQLiteParameter("@v", avail ? 0 : 1),
-                    new System.Data.SQLite.SQLiteParameter("@id", id));
+                DatabaseHelper.ExecuteNonQuery("UPDATE resources SET IsAvailable=@v WHERE Id=@id",
+                    new Npgsql.NpgsqlParameter("@v", avail ? 0 : 1),
+                    new Npgsql.NpgsqlParameter("@id", id));
                 LoadItems();
             };
 
@@ -242,9 +251,9 @@ namespace BILCAM.Forms
         // ── Helpers ─────────────────────────────────────────────────────────
         private void UpdateStatus(int id, string status)
         {
-            DatabaseHelper.ExecuteNonQuery("UPDATE Reservations SET Status=@s WHERE Id=@id",
-                new System.Data.SQLite.SQLiteParameter("@s", status),
-                new System.Data.SQLite.SQLiteParameter("@id", id));
+            DatabaseHelper.ExecuteNonQuery("UPDATE reservations SET Status=@s WHERE Id=@id",
+                new Npgsql.NpgsqlParameter("@s", status),
+                new Npgsql.NpgsqlParameter("@id", id));
         }
 
         private int CardWidth(FlowLayoutPanel pnl) => Math.Max(600, pnl.ClientSize.Width - 24);
