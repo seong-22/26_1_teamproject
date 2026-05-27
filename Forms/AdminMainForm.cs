@@ -27,7 +27,7 @@ namespace BILCAM.Forms
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Theme.BgTertiary;
             this.MinimumSize = new Size(700, 560);
-            this.AutoScaleMode = AutoScaleMode.Dpi;  // 추가: DPI 대응
+            this.AutoScaleMode = AutoScaleMode.Dpi;
             this.AutoScaleDimensions = new SizeF(96F, 96F);
 
             // Header
@@ -61,8 +61,8 @@ namespace BILCAM.Forms
             _tabs = new TabControl { Dock = DockStyle.Fill, Font = Theme.FontBody, Padding = new Point(16, 6) };
 
             var tabPending = new TabPage("  승인 대기  ") { BackColor = Theme.BgTertiary, Padding = new Padding(10) };
-            var tabAll     = new TabPage("  전체 예약  ") { BackColor = Theme.BgTertiary, Padding = new Padding(10) };
-            var tabItems   = new TabPage("  자원 관리  ") { BackColor = Theme.BgTertiary, Padding = new Padding(10) };
+            var tabAll = new TabPage("  전체 예약  ") { BackColor = Theme.BgTertiary, Padding = new Padding(10) };
+            var tabItems = new TabPage("  자원 관리  ") { BackColor = Theme.BgTertiary, Padding = new Padding(10) };
 
             _pnlPending = MakeFlowPanel(); tabPending.Controls.Add(_pnlPending);
             _pnlAll     = MakeFlowPanel(); tabAll.Controls.Add(_pnlAll);
@@ -71,7 +71,6 @@ namespace BILCAM.Forms
             _tabs.TabPages.AddRange(new[] { tabPending, tabAll, tabItems });
             _tabs.SelectedIndexChanged += (s, e) =>
             {
-                // 수정: 탭 0은 생성자에서 이미 로드했으므로 중복 호출 방지
                 if (_tabs.SelectedIndex == 0 && _pnlPending.Controls.Count == 0) LoadPending();
                 if (_tabs.SelectedIndex == 1) LoadAll();
                 if (_tabs.SelectedIndex == 2) LoadItems();
@@ -79,7 +78,8 @@ namespace BILCAM.Forms
 
             this.Controls.Add(_tabs);
             this.Controls.Add(header);
-            // 30초마다 자동 새로고침 (Supabase 실시간 동기화)
+
+            // 30초마다 자동 새로고침
             var refreshTimer = new System.Windows.Forms.Timer();
             refreshTimer.Interval = 30000;
             refreshTimer.Tick += (s, e) =>
@@ -104,9 +104,11 @@ namespace BILCAM.Forms
         {
             _pnlPending.Controls.Clear();
             var dt = DatabaseHelper.ExecuteQuery(
-                @"SELECT r.*, res.Name as ResourceName FROM reservations r
-                  JOIN resources res ON r.ResourceId = res.Id
-                  WHERE r.Status = 'pending' ORDER BY r.ReservationDate, r.StartTime");
+                @"SELECT r.*, res.name as ResourceName, u.studentid
+                  FROM reservations r
+                  JOIN resources res ON r.resourceid = res.id
+                  LEFT JOIN users u ON r.userid = u.userid
+                  WHERE r.status = 'pending' ORDER BY r.reservationdate, r.starttime");
 
             if (dt.Rows.Count == 0)
             {
@@ -120,21 +122,24 @@ namespace BILCAM.Forms
 
         private Panel BuildPendingCard(DataRow row)
         {
-            int resId = Convert.ToInt32(row["Id"]);
+            int resId = Convert.ToInt32(row["id"]);
             int cardW = CardWidth(_pnlPending);
 
             var card = new Panel { Width = cardW, Height = 94, BackColor = Theme.BgPrimary, Margin = new Padding(2, 0, 2, 6) };
             card.Paint += (s, e) => ControlPaint.DrawBorder(e.Graphics, card.ClientRectangle, Theme.Border, ButtonBorderStyle.Solid);
 
-            var lblName  = new Label { Text = row["ResourceName"].ToString(), Font = Theme.FontBold, ForeColor = Theme.TextPrimary, Location = new Point(14, 12), AutoSize = true };
+            var lblName = new Label { Text = row["ResourceName"].ToString(), Font = Theme.FontBold, ForeColor = Theme.TextPrimary, Location = new Point(14, 12), AutoSize = true };
+
+            string studentId = row["studentid"] == DBNull.Value ? "미등록" : row["studentid"].ToString();
             var lblDetail = new Label
             {
-                Text = $"신청자: {row["UserId"]}  |  {row["ReservationDate"]}  {row["StartTime"]} ~ {row["EndTime"]}",
+                Text = $"신청자: {row["userid"]}  |  학번: {studentId}  |  {row["reservationdate"]}  {row["starttime"]} ~ {row["endtime"]}",
                 Font = Theme.FontSmall,
                 ForeColor = Theme.TextSecondary,
                 Location = new Point(14, 34),
                 AutoSize = true
             };
+
             var badge = new Label { Text = "  대기  ", Font = Theme.FontSmall, BackColor = Theme.WarningLight, ForeColor = Theme.Warning, AutoSize = true, BorderStyle = BorderStyle.FixedSingle, Location = new Point(cardW - 80, 12) };
             badge.Anchor = AnchorStyles.Top | AnchorStyles.Right;
 
@@ -157,15 +162,17 @@ namespace BILCAM.Forms
         {
             _pnlAll.Controls.Clear();
             var dt = DatabaseHelper.ExecuteQuery(
-                @"SELECT r.*, res.Name as ResourceName FROM reservations r
-                  JOIN resources res ON r.ResourceId = res.Id
-                  ORDER BY r.ReservationDate DESC");
+                @"SELECT r.*, res.name as ResourceName, u.studentid
+                  FROM reservations r
+                  JOIN resources res ON r.resourceid = res.id
+                  LEFT JOIN users u ON r.userid = u.userid
+                  ORDER BY r.reservationdate DESC");
 
             if (dt.Rows.Count == 0) { _pnlAll.Controls.Add(MakeEmptyLabel("예약 내역이 없습니다.")); return; }
 
             foreach (DataRow row in dt.Rows)
             {
-                string status = row["Status"].ToString();
+                string status = row["status"].ToString();
                 string statusText = status == "pending" ? "대기" : status == "approved" ? "승인" : "반려";
                 Color bg = status == "pending" ? Theme.WarningLight : status == "approved" ? Theme.SuccessLight : Theme.DangerLight;
                 Color fg = status == "pending" ? Theme.Warning : status == "approved" ? Theme.Success : Theme.Danger;
@@ -174,10 +181,12 @@ namespace BILCAM.Forms
                 var card = new Panel { Width = cardW, Height = 68, BackColor = Theme.BgPrimary, Margin = new Padding(2, 0, 2, 6) };
                 card.Paint += (s, e) => ControlPaint.DrawBorder(e.Graphics, card.ClientRectangle, Theme.Border, ButtonBorderStyle.Solid);
 
+                string studentId = row["studentid"] == DBNull.Value ? "미등록" : row["studentid"].ToString();
+
                 card.Controls.Add(new Label { Text = row["ResourceName"].ToString(), Font = Theme.FontBold, ForeColor = Theme.TextPrimary, Location = new Point(14, 12), AutoSize = true });
                 card.Controls.Add(new Label
                 {
-                    Text = $"신청자: {row["UserId"]}  |  {row["ReservationDate"]}  {row["StartTime"]} ~ {row["EndTime"]}",
+                    Text = $"신청자: {row["userid"]}  |  학번: {studentId}  |  {row["reservationdate"]}  {row["starttime"]} ~ {row["endtime"]}",
                     Font = Theme.FontSmall,
                     ForeColor = Theme.TextSecondary,
                     Location = new Point(14, 34),
@@ -194,7 +203,6 @@ namespace BILCAM.Forms
         {
             _pnlItems.Controls.Clear();
 
-            // Add resource button
             var btnAdd = Theme.MakeButton("+ 새 자원 추가", Theme.Primary, Color.White, 160, 34);
             btnAdd.FlatAppearance.BorderSize = 0;
             btnAdd.Margin = new Padding(2, 0, 2, 10);
@@ -205,22 +213,22 @@ namespace BILCAM.Forms
             };
             _pnlItems.Controls.Add(btnAdd);
 
-            var dt = DatabaseHelper.ExecuteQuery("SELECT * FROM resources ORDER BY Category, Id");
+            var dt = DatabaseHelper.ExecuteQuery("SELECT * FROM resources ORDER BY category, id");
             foreach (DataRow row in dt.Rows)
                 _pnlItems.Controls.Add(BuildItemCard(row));
         }
 
         private Panel BuildItemCard(DataRow row)
         {
-            int id = Convert.ToInt32(row["Id"]);
-            bool avail = Convert.ToInt32(row["IsAvailable"]) == 1;
+            int id = Convert.ToInt32(row["id"]);
+            bool avail = Convert.ToInt32(row["isavailable"]) == 1;
             int cardW = CardWidth(_pnlItems);
 
             var card = new Panel { Width = cardW, Height = 80, BackColor = Theme.BgPrimary, Margin = new Padding(2, 0, 2, 6) };
             card.Paint += (s, e) => ControlPaint.DrawBorder(e.Graphics, card.ClientRectangle, Theme.Border, ButtonBorderStyle.Solid);
 
-            card.Controls.Add(new Label { Text = row["Name"].ToString(), Font = Theme.FontBold, ForeColor = Theme.TextPrimary, Location = new Point(14, 12), AutoSize = true });
-            card.Controls.Add(new Label { Text = row["Location"].ToString(), Font = Theme.FontSmall, ForeColor = Theme.TextMuted, Location = new Point(14, 34), AutoSize = true });
+            card.Controls.Add(new Label { Text = row["name"].ToString(), Font = Theme.FontBold, ForeColor = Theme.TextPrimary, Location = new Point(14, 12), AutoSize = true });
+            card.Controls.Add(new Label { Text = row["location"].ToString(), Font = Theme.FontSmall, ForeColor = Theme.TextMuted, Location = new Point(14, 34), AutoSize = true });
 
             var badge = new Label
             {
@@ -238,9 +246,7 @@ namespace BILCAM.Forms
             btnToggle.Location = new Point(14, 48);
             btnToggle.Click += (s, e) =>
             {
-                DatabaseHelper.ExecuteNonQuery("UPDATE resources SET IsAvailable=@v WHERE Id=@id",
-                    new Npgsql.NpgsqlParameter("@v", avail ? 0 : 1),
-                    new Npgsql.NpgsqlParameter("@id", id));
+                DatabaseHelper.ExecuteNonQuery($"UPDATE resources SET isavailable={(avail ? 0 : 1)} WHERE id={id}");
                 LoadItems();
             };
 
@@ -251,9 +257,7 @@ namespace BILCAM.Forms
         // ── Helpers ─────────────────────────────────────────────────────────
         private void UpdateStatus(int id, string status)
         {
-            DatabaseHelper.ExecuteNonQuery("UPDATE reservations SET Status=@s WHERE Id=@id",
-                new Npgsql.NpgsqlParameter("@s", status),
-                new Npgsql.NpgsqlParameter("@id", id));
+            DatabaseHelper.ExecuteNonQuery($"UPDATE reservations SET status='{status}' WHERE id={id}");
         }
 
         private int CardWidth(FlowLayoutPanel pnl) => Math.Max(600, pnl.ClientSize.Width - 24);

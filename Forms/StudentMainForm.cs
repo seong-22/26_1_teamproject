@@ -83,7 +83,6 @@ namespace BILCAM.Forms
             var tabResources = new TabPage("  자원 조회  ") { BackColor = Theme.BgTertiary, Padding = new Padding(10) };
             var tabMyRes = new TabPage("  내 예약  ") { BackColor = Theme.BgTertiary, Padding = new Padding(10) };
 
-            // Resources scroll panel
             _pnlResources = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
@@ -94,7 +93,6 @@ namespace BILCAM.Forms
             };
             tabResources.Controls.Add(_pnlResources);
 
-            // My reservations panel
             _pnlMyRes = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
@@ -114,7 +112,8 @@ namespace BILCAM.Forms
 
             this.Controls.Add(_tabs);
             this.Controls.Add(header);
-            // 30초마다 자동 새로고침 (Supabase 실시간 동기화)
+
+            // 30초마다 자동 새로고침
             var refreshTimer = new System.Windows.Forms.Timer();
             refreshTimer.Interval = 30000;
             refreshTimer.Tick += (s, e) =>
@@ -129,12 +128,12 @@ namespace BILCAM.Forms
         private void LoadResources()
         {
             _pnlResources.Controls.Clear();
-            var dt = DatabaseHelper.ExecuteQuery("SELECT * FROM resources ORDER BY Category, Id");
+            var dt = DatabaseHelper.ExecuteQuery("SELECT * FROM resources ORDER BY category, id");
 
             string currentCat = "";
             foreach (DataRow row in dt.Rows)
             {
-                string cat = row["Category"].ToString();
+                string cat = row["category"].ToString();
                 if (cat != currentCat)
                 {
                     currentCat = cat;
@@ -152,17 +151,18 @@ namespace BILCAM.Forms
                     _pnlResources.Controls.Add(lbl);
                 }
 
-                bool avail = Convert.ToInt32(row["IsAvailable"]) == 1;
+                bool avail = Convert.ToInt32(row["isavailable"]) == 1;
                 var card = BuildResourceCard(
-                    Convert.ToInt32(row["Id"]),
-                    row["Name"].ToString(),
-                    row["Location"].ToString(),
+                    Convert.ToInt32(row["id"]),
+                    row["name"].ToString(),
+                    row["location"].ToString(),
+                    row["category"].ToString(),
                     avail);
                 _pnlResources.Controls.Add(card);
             }
         }
 
-        private Panel BuildResourceCard(int id, string name, string location, bool available)
+        private Panel BuildResourceCard(int id, string name, string location, string category, bool available)
         {
             int cardWidth = Math.Max(500, _pnlResources.ClientSize.Width - 24);
             var card = new Panel
@@ -212,9 +212,9 @@ namespace BILCAM.Forms
 
             if (available)
             {
-                card.Click += (s, e) => OpenReservation(id, name);
-                lblName.Click += (s, e) => OpenReservation(id, name);
-                lblLoc.Click += (s, e) => OpenReservation(id, name);
+                card.Click += (s, e) => OpenReservation(id, name, category);
+                lblName.Click += (s, e) => OpenReservation(id, name, category);
+                lblLoc.Click += (s, e) => OpenReservation(id, name, category);
                 card.MouseEnter += (s, e) => card.BackColor = Theme.BgSecondary;
                 card.MouseLeave += (s, e) => card.BackColor = Theme.BgPrimary;
             }
@@ -222,9 +222,9 @@ namespace BILCAM.Forms
             return card;
         }
 
-        private void OpenReservation(int resourceId, string resourceName)
+        private void OpenReservation(int resourceId, string resourceName, string category)
         {
-            var form = new ReservationForm(_user, resourceId, resourceName);
+            var form = new ReservationForm(_user, resourceId, resourceName, category);
             form.ShowDialog(this);
             LoadResources();
         }
@@ -234,10 +234,7 @@ namespace BILCAM.Forms
         {
             _pnlMyRes.Controls.Clear();
             var dt = DatabaseHelper.ExecuteQuery(
-                @"SELECT r.*, res.Name as ResourceName FROM reservations r
-                  JOIN resources res ON r.ResourceId = res.Id
-                  WHERE r.UserId = @uid ORDER BY r.ReservationDate DESC",
-                new Npgsql.NpgsqlParameter("@uid", _user.UserId));
+                $"SELECT r.*, res.name as ResourceName FROM reservations r JOIN resources res ON r.resourceid = res.id WHERE r.userid = '{_user.UserId}' ORDER BY r.reservationdate DESC");
 
             if (dt.Rows.Count == 0)
             {
@@ -258,8 +255,8 @@ namespace BILCAM.Forms
 
         private Panel BuildMyResCard(DataRow row)
         {
-            int id = Convert.ToInt32(row["Id"]);
-            string status = row["Status"].ToString();
+            int id = Convert.ToInt32(row["id"]);
+            string status = row["status"].ToString();
             string statusText = status == "pending" ? "승인 대기" : status == "approved" ? "승인됨" : "반려됨";
             Color statusBg = status == "pending" ? Theme.WarningLight : status == "approved" ? Theme.SuccessLight : Theme.DangerLight;
             Color statusFg = status == "pending" ? Theme.Warning : status == "approved" ? Theme.Success : Theme.Danger;
@@ -275,9 +272,16 @@ namespace BILCAM.Forms
             card.Paint += (s, e) => ControlPaint.DrawBorder(e.Graphics, card.ClientRectangle, Theme.Border, ButtonBorderStyle.Solid);
 
             var lblName = new Label { Text = row["ResourceName"].ToString(), Font = Theme.FontBold, ForeColor = Theme.TextPrimary, Location = new Point(14, 12), AutoSize = true };
+
+            // 노트북/우산은 시간 표시 안 함
+            string startTime = row["starttime"].ToString();
+            string detailText = startTime == "00:00"
+                ? $"{row["reservationdate"]}  (하루 대여)"
+                : $"{row["reservationdate"]}  {row["starttime"]} ~ {row["endtime"]}";
+
             var lblDetail = new Label
             {
-                Text = $"{row["ReservationDate"]}  {row["StartTime"]} ~ {row["EndTime"]}",
+                Text = detailText,
                 Font = Theme.FontSmall,
                 ForeColor = Theme.TextSecondary,
                 Location = new Point(14, 34),
@@ -315,8 +319,7 @@ namespace BILCAM.Forms
                 {
                     if (MessageBox.Show("예약을 취소하시겠습니까?", "확인", MessageBoxButtons.YesNo) == DialogResult.Yes)
                     {
-                        DatabaseHelper.ExecuteNonQuery("DELETE FROM reservations WHERE Id=@id",
-                            new Npgsql.NpgsqlParameter("@id", id));
+                        DatabaseHelper.ExecuteNonQuery($"DELETE FROM reservations WHERE id={id}");
                         LoadMyReservations();
                     }
                 };
