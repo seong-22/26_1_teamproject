@@ -85,15 +85,15 @@ namespace BILCAM.Forms
             { lblError.Text = "비밀번호가 일치하지 않습니다."; return; }
 
             // Check duplicate
-            var dt = DatabaseHelper.ExecuteQuery("SELECT Id FROM Users WHERE UserId=@id", new System.Data.SQLite.SQLiteParameter("@id", id));
+            var dt = DatabaseHelper.ExecuteQuery("SELECT Id FROM users WHERE UserId=@id", new Npgsql.NpgsqlParameter("@id", id));
             if (dt.Rows.Count > 0)
             { lblError.Text = "이미 사용 중인 아이디입니다."; return; }
 
             DatabaseHelper.ExecuteNonQuery(
-                "INSERT INTO Users (UserId, PasswordHash, Name, Role) VALUES (@id, @pw, @name, 'student')",
-                new System.Data.SQLite.SQLiteParameter("@id", id),
-                new System.Data.SQLite.SQLiteParameter("@pw", DatabaseHelper.HashPassword(pw)),
-                new System.Data.SQLite.SQLiteParameter("@name", name));
+                "INSERT INTO users (UserId, PasswordHash, Name, Role) VALUES (@id, @pw, @name, 'student')",
+                new Npgsql.NpgsqlParameter("@id", id),
+                new Npgsql.NpgsqlParameter("@pw", DatabaseHelper.HashPassword(pw)),
+                new Npgsql.NpgsqlParameter("@name", name));
 
             MessageBox.Show("회원가입이 완료되었습니다!", "BILCAM", MessageBoxButtons.OK, MessageBoxIcon.Information);
             this.Close();
