@@ -277,10 +277,23 @@ namespace BILCAM.Forms
             int cardWidth = Math.Max(500, pnl.ClientSize.Width - 24);
             bool canCancel = status == "pending" || status == "approved";
 
+            // 메모 / 반려 사유 확인
+            string memo = (row.Table.Columns.Contains("memo") && row["memo"] != DBNull.Value)
+                ? row["memo"].ToString() : "";
+            string rejectReason = (row.Table.Columns.Contains("rejectreason") && row["rejectreason"] != DBNull.Value)
+                ? row["rejectreason"].ToString() : "";
+
+            bool hasMemo = !string.IsNullOrWhiteSpace(memo);
+            bool hasReject = status == "rejected" && !string.IsNullOrWhiteSpace(rejectReason);
+            int extraLines = (hasMemo ? 1 : 0) + (hasReject ? 1 : 0);
+
+            int baseHeight = canCancel ? 90 : 72;
+            int cardHeight = baseHeight + extraLines * 22;
+
             var card = new Panel
             {
                 Width = cardWidth,
-                Height = canCancel ? 90 : 72,
+                Height = cardHeight,
                 BackColor = Theme.BgPrimary,
                 Margin = new Padding(2, 0, 2, 8)
             };
@@ -309,6 +322,34 @@ namespace BILCAM.Forms
 
             card.Controls.AddRange(new Control[] { lblName, lblDetail, badge });
 
+            int lineY = 56;
+            if (hasMemo)
+            {
+                var lblMemo = new Label
+                {
+                    Text = $"메모: {memo}",
+                    Font = Theme.FontSmall,
+                    ForeColor = Theme.TextMuted,
+                    Location = new Point(14, lineY),
+                    AutoSize = true
+                };
+                card.Controls.Add(lblMemo);
+                lineY += 22;
+            }
+            if (hasReject)
+            {
+                var lblReject = new Label
+                {
+                    Text = $"반려 사유: {rejectReason}",
+                    Font = Theme.FontSmall,
+                    ForeColor = Theme.Danger,
+                    Location = new Point(14, lineY),
+                    AutoSize = true
+                };
+                card.Controls.Add(lblReject);
+                lineY += 22;
+            }
+
             if (canCancel)
             {
                 var btnCancel = new Button
@@ -319,7 +360,7 @@ namespace BILCAM.Forms
                     BackColor = Theme.BgSecondary,
                     ForeColor = Theme.Danger,
                     Size = new Size(72, 24),
-                    Location = new Point(14, 56),
+                    Location = new Point(14, lineY),
                     Cursor = Cursors.Hand
                 };
                 btnCancel.FlatAppearance.BorderColor = Theme.DangerLight;
