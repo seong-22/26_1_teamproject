@@ -18,6 +18,7 @@ namespace BILCAM.Forms
         private Panel _slotPanel;
         private Label _lblSelectedSlot;
         private Label _lblDateWarning;
+        private TextBox _txtMemo;
         private string _selectedSlot;
         private List<string> _takenSlots = new List<string>();
         private List<DateTime> _takenDates = new List<DateTime>();
@@ -63,7 +64,7 @@ namespace BILCAM.Forms
         private void InitializeComponent()
         {
             this.Text = $"예약 신청 — {_resourceName}";
-            this.Size = IsDateOnly ? new Size(560, 580) : new Size(560, 780);
+            this.Size = IsDateOnly ? new Size(560, 660) : new Size(560, 860);
             this.MinimumSize = this.Size;
             this.StartPosition = FormStartPosition.CenterParent;
             this.BackColor = Theme.BgSecondary;
@@ -95,7 +96,7 @@ namespace BILCAM.Forms
             var inner = new Panel
             {
                 Width = 500,
-                Height = IsDateOnly ? 480 : 700,
+                Height = IsDateOnly ? 560 : 780,
                 Location = new Point(0, 0),
                 BackColor = Theme.BgSecondary
             };
@@ -208,6 +209,31 @@ namespace BILCAM.Forms
                 inner.Controls.Add(_lblSelectedSlot);
                 y += 30;
             }
+
+            // 메모 입력란
+            y += 6;
+            inner.Controls.Add(new Label
+            {
+                Text = "사용 목적 / 메모 (선택)",
+                Font = new Font("맑은 고딕", 9f, FontStyle.Bold),
+                ForeColor = Theme.TextSecondary,
+                Location = new Point(0, y),
+                AutoSize = true
+            });
+            y += 22;
+
+            _txtMemo = new TextBox
+            {
+                Location = new Point(0, y),
+                Width = 500,
+                Height = 60,
+                Multiline = true,
+                Font = Theme.FontBody,
+                BorderStyle = BorderStyle.FixedSingle,
+                MaxLength = 200
+            };
+            inner.Controls.Add(_txtMemo);
+            y += _txtMemo.Height + 16;
 
             // 예약 신청 버튼
             var btnSubmit = new Button
@@ -531,6 +557,7 @@ namespace BILCAM.Forms
         private void DoSubmit(object sender, EventArgs e)
         {
             string dateStr = _selectedDate.ToString("yyyy-MM-dd");
+            string memo = _txtMemo.Text.Trim().Replace("'", "''");
 
             if (IsDateOnly)
             {
@@ -541,8 +568,8 @@ namespace BILCAM.Forms
                     return;
                 }
                 DatabaseHelper.ExecuteNonQuery(
-                    $"INSERT INTO reservations (userid, resourceid, reservationdate, starttime, endtime, status, createdat) " +
-                    $"VALUES ('{_user.UserId}', {_resourceId}, '{dateStr}', '00:00', '23:59', 'pending', '{DateTime.Now}')");
+                    $"INSERT INTO reservations (userid, resourceid, reservationdate, starttime, endtime, status, createdat, memo) " +
+                    $"VALUES ('{_user.UserId}', {_resourceId}, '{dateStr}', '00:00', '23:59', 'pending', '{DateTime.Now}', '{memo}')");
             }
             else
             {
@@ -564,8 +591,8 @@ namespace BILCAM.Forms
                     return;
                 }
                 DatabaseHelper.ExecuteNonQuery(
-                    $"INSERT INTO reservations (userid, resourceid, reservationdate, starttime, endtime, status, createdat) " +
-                    $"VALUES ('{_user.UserId}', {_resourceId}, '{dateStr}', '{_selectedSlot}', '{endTime}', 'pending', '{DateTime.Now}')");
+                    $"INSERT INTO reservations (userid, resourceid, reservationdate, starttime, endtime, status, createdat, memo) " +
+                    $"VALUES ('{_user.UserId}', {_resourceId}, '{dateStr}', '{_selectedSlot}', '{endTime}', 'pending', '{DateTime.Now}', '{memo}')");
             }
 
             MessageBox.Show("예약 신청이 완료되었습니다!\n관리자 승인 후 확정됩니다.", "BILCAM",
