@@ -31,9 +31,9 @@ namespace BILCAM.Forms
                 Width = 360,
                 Height = 500,
                 BackColor = Theme.BgPrimary,
-                Location = new Point(30, 30),
                 Padding = new Padding(30)
             };
+            pnl.Location = new Point((this.ClientSize.Width - pnl.Width) / 2, 30);
             pnl.Paint += (s, e) => ControlPaint.DrawBorder(e.Graphics, pnl.ClientRectangle,
                 Theme.Border, ButtonBorderStyle.Solid);
 

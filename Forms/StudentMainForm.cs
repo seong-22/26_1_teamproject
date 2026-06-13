@@ -52,6 +52,16 @@ namespace BILCAM.Forms
             };
             lblUser.Anchor = AnchorStyles.Top | AnchorStyles.Right;
 
+            // 실시간 시계
+            var lblClock = new Label
+            {
+                Font = Theme.FontSmall,
+                ForeColor = Theme.TextMuted,
+                AutoSize = true,
+                Text = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+            };
+            lblClock.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+
             var btnLogout = new Button
             {
                 Text = "로그아웃",
@@ -66,11 +76,12 @@ namespace BILCAM.Forms
             btnLogout.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnLogout.Click += (s, e) => { this.Close(); };
 
-            header.Controls.AddRange(new Control[] { lblTitle, lblUser, btnLogout });
+            header.Controls.AddRange(new Control[] { lblTitle, lblUser, lblClock, btnLogout });
             header.Layout += (s, e) =>
             {
                 btnLogout.Location = new Point(header.Width - 86, 13);
                 lblUser.Location = new Point(header.Width - 90 - lblUser.PreferredWidth - 8, 18);
+                lblClock.Location = new Point(lblUser.Location.X - lblClock.PreferredWidth - 16, 18);
             };
 
             // 메인 탭
@@ -135,6 +146,16 @@ namespace BILCAM.Forms
                 else LoadMyReservations();
             };
             refreshTimer.Start();
+
+            // 1초마다 시계 업데이트
+            var clockTimer = new System.Windows.Forms.Timer();
+            clockTimer.Interval = 1000;
+            clockTimer.Tick += (s, e) =>
+            {
+                lblClock.Text = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                header.PerformLayout();
+            };
+            clockTimer.Start();
         }
 
         private FlowLayoutPanel MakeResPanel() => new FlowLayoutPanel
@@ -265,6 +286,18 @@ namespace BILCAM.Forms
             if (!hasRejected) _pnlRejected.Controls.Add(MakeEmptyLabel("반려된 예약이 없습니다."));
         }
 
+        private bool IsPast(DataRow row)
+        {
+            string dateStr = row["reservationdate"].ToString();
+            string endTime = row["endtime"].ToString();
+
+            if (!DateTime.TryParse(dateStr, out DateTime date)) return false;
+            if (!TimeSpan.TryParse(endTime, out TimeSpan time)) return false;
+
+            DateTime endDateTime = date.Date + time;
+            return DateTime.Now > endDateTime;
+        }
+
         private Panel BuildMyResCard(DataRow row)
         {
             int id = Convert.ToInt32(row["id"]);
@@ -275,7 +308,7 @@ namespace BILCAM.Forms
 
             var pnl = status == "pending" ? _pnlPending : status == "approved" ? _pnlApproved : _pnlRejected;
             int cardWidth = Math.Max(500, pnl.ClientSize.Width - 24);
-            bool canCancel = status == "pending" || status == "approved";
+            bool canCancel = (status == "pending" || status == "approved") && !IsPast(row);
 
             // 메모 / 반려 사유 확인
             string memo = (row.Table.Columns.Contains("memo") && row["memo"] != DBNull.Value)

@@ -40,6 +40,17 @@ namespace BILCAM.Forms
                 Location = new Point(20, 14),
                 AutoSize = true
             };
+
+            // 실시간 시계
+            var lblClock = new Label
+            {
+                Font = Theme.FontSmall,
+                ForeColor = Color.White,
+                AutoSize = true,
+                Text = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+            };
+            lblClock.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+
             var btnLogout = new Button
             {
                 Text = "로그아웃",
@@ -55,8 +66,12 @@ namespace BILCAM.Forms
             btnLogout.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnLogout.Click += (s, e) => this.Close();
 
-            header.Layout += (s, e) => btnLogout.Location = new Point(header.Width - 86, 13);
-            header.Controls.AddRange(new Control[] { lblTitle, btnLogout });
+            header.Layout += (s, e) =>
+            {
+                btnLogout.Location = new Point(header.Width - 86, 13);
+                lblClock.Location = new Point(header.Width - 86 - lblClock.PreferredWidth - 16, 18);
+            };
+            header.Controls.AddRange(new Control[] { lblTitle, lblClock, btnLogout });
 
             // Tabs
             _tabs = new TabControl { Dock = DockStyle.Fill, Font = Theme.FontBody, Padding = new Point(16, 6) };
@@ -89,6 +104,16 @@ namespace BILCAM.Forms
                 else if (_tabs.SelectedIndex == 1) LoadAll();
             };
             refreshTimer.Start();
+
+            // 1초마다 시계 업데이트
+            var clockTimer = new System.Windows.Forms.Timer();
+            clockTimer.Interval = 1000;
+            clockTimer.Tick += (s, e) =>
+            {
+                lblClock.Text = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                header.PerformLayout();
+            };
+            clockTimer.Start();
         }
 
         private FlowLayoutPanel MakeFlowPanel() => new FlowLayoutPanel
@@ -316,15 +341,15 @@ namespace BILCAM.Forms
             _pnlItems.Controls.Add(btnAdd);
 
             var dt = DatabaseHelper.ExecuteQuery("SELECT * FROM resources ORDER BY category, id");
+            int fixedCardW = CardWidth(_pnlItems);
             foreach (DataRow row in dt.Rows)
-                _pnlItems.Controls.Add(BuildItemCard(row));
+                _pnlItems.Controls.Add(BuildItemCard(row, fixedCardW));
         }
 
-        private Panel BuildItemCard(DataRow row)
+        private Panel BuildItemCard(DataRow row, int cardW)
         {
             int id = Convert.ToInt32(row["id"]);
             bool avail = Convert.ToInt32(row["isavailable"]) == 1;
-            int cardW = CardWidth(_pnlItems);
 
             var card = new Panel { Width = cardW, Height = 80, BackColor = Theme.BgPrimary, Margin = new Padding(2, 0, 2, 6) };
             card.Paint += (s, e) => ControlPaint.DrawBorder(e.Graphics, card.ClientRectangle, Theme.Border, ButtonBorderStyle.Solid);
@@ -362,7 +387,7 @@ namespace BILCAM.Forms
             DatabaseHelper.ExecuteNonQuery($"UPDATE reservations SET status='{status}' WHERE id={id}");
         }
 
-        private int CardWidth(FlowLayoutPanel pnl) => Math.Max(600, pnl.ClientSize.Width - 24);
+        private int CardWidth(FlowLayoutPanel pnl) => Math.Max(600, pnl.ClientSize.Width - 30);
 
         private Label MakeEmptyLabel(string text) => new Label
         {

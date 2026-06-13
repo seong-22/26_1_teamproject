@@ -86,6 +86,9 @@ namespace BILCAM.Forms
             if (pw != pw2)
             { lblError.Text = "비밀번호가 일치하지 않습니다."; return; }
 
+            if (pw.Length < 8)
+            { lblError.Text = "비밀번호는 8자 이상 입력하세요."; return; }
+
             // 학번 숫자 확인
             if (!System.Text.RegularExpressions.Regex.IsMatch(studentId, @"^\d+$"))
             { lblError.Text = "학번은 숫자만 입력하세요."; return; }
