@@ -11,7 +11,9 @@ namespace BILCAM.Forms
     {
         private User _user;
         private TabControl _tabs;
-        private FlowLayoutPanel _pnlPending, _pnlAll, _pnlItems;
+        private FlowLayoutPanel _pnlPending, _pnlItems;
+        private TabControl _allTabControl;
+        private FlowLayoutPanel _pnlAllPending, _pnlAllApproved, _pnlAllRejected;
 
         public AdminMainForm(User user)
         {
@@ -74,12 +76,32 @@ namespace BILCAM.Forms
             _tabs = new TabControl { Dock = DockStyle.Fill, Font = Theme.FontBody, Padding = new Point(16, 6) };
 
             var tabPending = new TabPage(AppLanguage.Get("admin_tab_pending")) { BackColor = Theme.BgTertiary, Padding = new Padding(10) };
-            var tabAll = new TabPage(AppLanguage.Get("admin_tab_all")) { BackColor = Theme.BgTertiary, Padding = new Padding(10) };
+            var tabAll = new TabPage(AppLanguage.Get("admin_tab_all")) { BackColor = Theme.BgTertiary, Padding = new Padding(6) };
             var tabItems = new TabPage(AppLanguage.Get("admin_tab_items")) { BackColor = Theme.BgTertiary, Padding = new Padding(10) };
 
             _pnlPending = MakeFlowPanel(); tabPending.Controls.Add(_pnlPending);
-            _pnlAll     = MakeFlowPanel(); tabAll.Controls.Add(_pnlAll);
             _pnlItems   = MakeFlowPanel(); tabItems.Controls.Add(_pnlItems);
+
+            // 전체 예약 서브탭
+            _allTabControl = new TabControl
+            {
+                Dock = DockStyle.Fill,
+                Font = Theme.FontSmall,
+                Padding = new Point(12, 5)
+            };
+
+            var tabAllPending = new TabPage(AppLanguage.Get("admin_tab_pending")) { BackColor = Theme.BgTertiary, Padding = new Padding(6) };
+            var tabAllApproved = new TabPage(AppLanguage.Get("admin_status_approved").Trim()) { BackColor = Theme.BgTertiary, Padding = new Padding(6) };
+            var tabAllRejected = new TabPage(AppLanguage.Get("admin_status_rejected").Trim()) { BackColor = Theme.BgTertiary, Padding = new Padding(6) };
+
+            _pnlAllPending  = MakeFlowPanel(); tabAllPending.Controls.Add(_pnlAllPending);
+            _pnlAllApproved = MakeFlowPanel(); tabAllApproved.Controls.Add(_pnlAllApproved);
+            _pnlAllRejected = MakeFlowPanel(); tabAllRejected.Controls.Add(_pnlAllRejected);
+
+            _allTabControl.TabPages.AddRange(new[] { tabAllPending, tabAllApproved, tabAllRejected });
+            _allTabControl.SelectedIndexChanged += (s, e) => LoadAll();
+
+            tabAll.Controls.Add(_allTabControl);
 
             _tabs.TabPages.AddRange(new[] { tabPending, tabAll, tabItems });
             _tabs.SelectedIndexChanged += (s, e) =>
@@ -243,10 +265,13 @@ namespace BILCAM.Forms
             }
         }
 
-        // ── All reservations ────────────────────────────────────────────────
+        // ── All reservations (서브탭) ────────────────────────────────────────
         private void LoadAll()
         {
-            _pnlAll.Controls.Clear();
+            _pnlAllPending.Controls.Clear();
+            _pnlAllApproved.Controls.Clear();
+            _pnlAllRejected.Controls.Clear();
+
             var dt = DatabaseHelper.ExecuteQuery(
                 @"SELECT r.*, res.name as ResourceName, u.studentid, u.name as username
                   FROM reservations r
@@ -254,57 +279,72 @@ namespace BILCAM.Forms
                   LEFT JOIN users u ON r.userid = u.userid
                   ORDER BY r.reservationdate DESC");
 
-            if (dt.Rows.Count == 0) { _pnlAll.Controls.Add(MakeEmptyLabel(AppLanguage.Get("admin_empty_all"))); return; }
+            bool hasPending = false, hasApproved = false, hasRejected = false;
 
             foreach (DataRow row in dt.Rows)
             {
                 string status = row["status"].ToString();
-                string statusText = status == "pending" ? AppLanguage.Get("admin_status_pending")
-                                  : status == "approved" ? AppLanguage.Get("admin_status_approved")
-                                  : AppLanguage.Get("admin_status_rejected");
-                Color bg = status == "pending" ? Theme.WarningLight : status == "approved" ? Theme.SuccessLight : Theme.DangerLight;
-                Color fg = status == "pending" ? Theme.Warning : status == "approved" ? Theme.Success : Theme.Danger;
-
-                string memo = (row.Table.Columns.Contains("memo") && row["memo"] != DBNull.Value) ? row["memo"].ToString() : "";
-                string rejectReason = (row.Table.Columns.Contains("rejectreason") && row["rejectreason"] != DBNull.Value) ? row["rejectreason"].ToString() : "";
-
-                bool hasMemo = !string.IsNullOrWhiteSpace(memo);
-                bool hasReject = status == "rejected" && !string.IsNullOrWhiteSpace(rejectReason);
-                int extraLines = (hasMemo ? 1 : 0) + (hasReject ? 1 : 0);
-
-                int cardW = CardWidth(_pnlAll);
-                int cardH = 68 + extraLines * 22;
-                var card = new Panel { Width = cardW, Height = cardH, BackColor = Theme.BgPrimary, Margin = new Padding(2, 0, 2, 6) };
-                card.Paint += (s, e) => ControlPaint.DrawBorder(e.Graphics, card.ClientRectangle, Theme.Border, ButtonBorderStyle.Solid);
-
-                string studentId = row["studentid"] == DBNull.Value ? "미등록" : row["studentid"].ToString();
-                string userName = row["username"]  == DBNull.Value ? "" : row["username"].ToString();
-
-                card.Controls.Add(new Label { Text = row["ResourceName"].ToString(), Font = Theme.FontBold, ForeColor = Theme.TextPrimary, Location = new Point(14, 12), AutoSize = true });
-                card.Controls.Add(new Label
-                {
-                    Text = $"{AppLanguage.Get("admin_applicant")}{row["userid"]} ({userName})  |  {AppLanguage.Get("admin_studentid")}{studentId}  |  {row["reservationdate"]}  {row["starttime"]} ~ {row["endtime"]}",
-                    Font = Theme.FontSmall,
-                    ForeColor = Theme.TextSecondary,
-                    Location = new Point(14, 34),
-                    AutoSize = true
-                });
-                card.Controls.Add(new Label { Text = statusText, Font = Theme.FontSmall, BackColor = bg, ForeColor = fg, AutoSize = true, BorderStyle = BorderStyle.FixedSingle, Location = new Point(cardW - 80, 12), Anchor = AnchorStyles.Top | AnchorStyles.Right });
-
-                int lineY = 56;
-                if (hasMemo)
-                {
-                    card.Controls.Add(new Label { Text = AppLanguage.Get("admin_memo") + memo, Font = Theme.FontSmall, ForeColor = Theme.TextMuted, Location = new Point(14, lineY), AutoSize = true });
-                    lineY += 22;
-                }
-                if (hasReject)
-                {
-                    card.Controls.Add(new Label { Text = AppLanguage.Get("admin_reject_reason") + rejectReason, Font = Theme.FontSmall, ForeColor = Theme.Danger, Location = new Point(14, lineY), AutoSize = true });
-                    lineY += 22;
-                }
-
-                _pnlAll.Controls.Add(card);
+                var card = BuildAllCard(row);
+                if (status == "pending") { _pnlAllPending.Controls.Add(card); hasPending = true; }
+                else if (status == "approved") { _pnlAllApproved.Controls.Add(card); hasApproved = true; }
+                else { _pnlAllRejected.Controls.Add(card); hasRejected = true; }
             }
+
+            if (!hasPending) _pnlAllPending.Controls.Add(MakeEmptyLabel(AppLanguage.Get("admin_empty_pending")));
+            if (!hasApproved) _pnlAllApproved.Controls.Add(MakeEmptyLabel(AppLanguage.Get("admin_empty_all")));
+            if (!hasRejected) _pnlAllRejected.Controls.Add(MakeEmptyLabel(AppLanguage.Get("admin_empty_all")));
+        }
+
+        private Panel BuildAllCard(DataRow row)
+        {
+            string status = row["status"].ToString();
+            string statusText = status == "pending" ? AppLanguage.Get("admin_status_pending")
+                              : status == "approved" ? AppLanguage.Get("admin_status_approved")
+                              : AppLanguage.Get("admin_status_rejected");
+            Color bg = status == "pending" ? Theme.WarningLight : status == "approved" ? Theme.SuccessLight : Theme.DangerLight;
+            Color fg = status == "pending" ? Theme.Warning : status == "approved" ? Theme.Success : Theme.Danger;
+
+            string memo = (row.Table.Columns.Contains("memo") && row["memo"] != DBNull.Value) ? row["memo"].ToString() : "";
+            string rejectReason = (row.Table.Columns.Contains("rejectreason") && row["rejectreason"] != DBNull.Value) ? row["rejectreason"].ToString() : "";
+
+            bool hasMemo = !string.IsNullOrWhiteSpace(memo);
+            bool hasReject = status == "rejected" && !string.IsNullOrWhiteSpace(rejectReason);
+            int extraLines = (hasMemo ? 1 : 0) + (hasReject ? 1 : 0);
+
+            var pnl = status == "pending" ? _pnlAllPending : status == "approved" ? _pnlAllApproved : _pnlAllRejected;
+            int cardW = CardWidth(pnl);
+            int cardH = 68 + extraLines * 22;
+
+            var card = new Panel { Width = cardW, Height = cardH, BackColor = Theme.BgPrimary, Margin = new Padding(2, 0, 2, 6) };
+            card.Paint += (s, e) => ControlPaint.DrawBorder(e.Graphics, card.ClientRectangle, Theme.Border, ButtonBorderStyle.Solid);
+
+            string studentId = row["studentid"] == DBNull.Value ? "미등록" : row["studentid"].ToString();
+            string userName = row["username"]  == DBNull.Value ? "" : row["username"].ToString();
+
+            card.Controls.Add(new Label { Text = row["ResourceName"].ToString(), Font = Theme.FontBold, ForeColor = Theme.TextPrimary, Location = new Point(14, 12), AutoSize = true });
+            card.Controls.Add(new Label
+            {
+                Text = $"{AppLanguage.Get("admin_applicant")}{row["userid"]} ({userName})  |  {AppLanguage.Get("admin_studentid")}{studentId}  |  {row["reservationdate"]}  {row["starttime"]} ~ {row["endtime"]}",
+                Font = Theme.FontSmall,
+                ForeColor = Theme.TextSecondary,
+                Location = new Point(14, 34),
+                AutoSize = true
+            });
+            card.Controls.Add(new Label { Text = statusText, Font = Theme.FontSmall, BackColor = bg, ForeColor = fg, AutoSize = true, BorderStyle = BorderStyle.FixedSingle, Location = new Point(cardW - 80, 12), Anchor = AnchorStyles.Top | AnchorStyles.Right });
+
+            int lineY = 56;
+            if (hasMemo)
+            {
+                card.Controls.Add(new Label { Text = AppLanguage.Get("admin_memo") + memo, Font = Theme.FontSmall, ForeColor = Theme.TextMuted, Location = new Point(14, lineY), AutoSize = true });
+                lineY += 22;
+            }
+            if (hasReject)
+            {
+                card.Controls.Add(new Label { Text = AppLanguage.Get("admin_reject_reason") + rejectReason, Font = Theme.FontSmall, ForeColor = Theme.Danger, Location = new Point(14, lineY), AutoSize = true });
+                lineY += 22;
+            }
+
+            return card;
         }
 
         // ── Items management ────────────────────────────────────────────────
