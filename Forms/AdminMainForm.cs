@@ -399,7 +399,26 @@ namespace BILCAM.Forms
                 LoadItems();
             };
 
-            card.Controls.AddRange(new Control[] { badge, btnToggle });
+            var btnDelete = Theme.MakeButton("삭제", Theme.DangerLight, Theme.Danger, 60, 26);
+            btnDelete.Location = new Point(180, 48);
+            btnDelete.Click += (s, e) =>
+            {
+                var check = DatabaseHelper.ExecuteQuery(
+                    $"SELECT id FROM reservations WHERE resourceid={id} AND status != 'rejected'");
+                if (check.Rows.Count > 0)
+                {
+                    MessageBox.Show("해당 자원에 예약 내역이 있어 삭제할 수 없습니다.", "BILCAM",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                if (MessageBox.Show("자원을 삭제하시겠습니까?", "확인", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                {
+                    DatabaseHelper.ExecuteNonQuery($"DELETE FROM resources WHERE id={id}");
+                    LoadItems();
+                }
+            };
+
+            card.Controls.AddRange(new Control[] { badge, btnToggle, btnDelete });
             return card;
         }
 
