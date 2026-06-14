@@ -41,7 +41,6 @@ namespace BILCAM.Forms
                 AutoSize = true
             };
 
-            // 실시간 시계
             var lblClock = new Label
             {
                 Font = Theme.FontSmall,
@@ -73,7 +72,6 @@ namespace BILCAM.Forms
             };
             header.Controls.AddRange(new Control[] { lblTitle, lblClock, btnLogout });
 
-            // Tabs
             _tabs = new TabControl { Dock = DockStyle.Fill, Font = Theme.FontBody, Padding = new Point(16, 6) };
 
             var tabPending = new TabPage("  승인 대기  ") { BackColor = Theme.BgTertiary, Padding = new Padding(10) };
@@ -95,7 +93,6 @@ namespace BILCAM.Forms
             this.Controls.Add(_tabs);
             this.Controls.Add(header);
 
-            // 30초마다 자동 새로고침
             var refreshTimer = new System.Windows.Forms.Timer();
             refreshTimer.Interval = 30000;
             refreshTimer.Tick += (s, e) =>
@@ -105,7 +102,6 @@ namespace BILCAM.Forms
             };
             refreshTimer.Start();
 
-            // 1초마다 시계 업데이트
             var clockTimer = new System.Windows.Forms.Timer();
             clockTimer.Interval = 1000;
             clockTimer.Tick += (s, e) =>
@@ -130,7 +126,7 @@ namespace BILCAM.Forms
         {
             _pnlPending.Controls.Clear();
             var dt = DatabaseHelper.ExecuteQuery(
-                @"SELECT r.*, res.name as ResourceName, u.studentid
+                @"SELECT r.*, res.name as ResourceName, u.studentid, u.name as username
                   FROM reservations r
                   JOIN resources res ON r.resourceid = res.id
                   LEFT JOIN users u ON r.userid = u.userid
@@ -163,9 +159,11 @@ namespace BILCAM.Forms
             var lblName = new Label { Text = row["ResourceName"].ToString(), Font = Theme.FontBold, ForeColor = Theme.TextPrimary, Location = new Point(14, 12), AutoSize = true };
 
             string studentId = row["studentid"] == DBNull.Value ? "미등록" : row["studentid"].ToString();
+            string userName = row["username"] == DBNull.Value ? "" : row["username"].ToString();
+
             var lblDetail = new Label
             {
-                Text = $"신청자: {row["userid"]}  |  학번: {studentId}  |  {row["reservationdate"]}  {row["starttime"]} ~ {row["endtime"]}",
+                Text = $"신청자: {row["userid"]} ({userName})  |  학번: {studentId}  |  {row["reservationdate"]}  {row["starttime"]} ~ {row["endtime"]}",
                 Font = Theme.FontSmall,
                 ForeColor = Theme.TextSecondary,
                 Location = new Point(14, 34),
@@ -267,7 +265,7 @@ namespace BILCAM.Forms
         {
             _pnlAll.Controls.Clear();
             var dt = DatabaseHelper.ExecuteQuery(
-                @"SELECT r.*, res.name as ResourceName, u.studentid
+                @"SELECT r.*, res.name as ResourceName, u.studentid, u.name as username
                   FROM reservations r
                   JOIN resources res ON r.resourceid = res.id
                   LEFT JOIN users u ON r.userid = u.userid
@@ -297,11 +295,12 @@ namespace BILCAM.Forms
                 card.Paint += (s, e) => ControlPaint.DrawBorder(e.Graphics, card.ClientRectangle, Theme.Border, ButtonBorderStyle.Solid);
 
                 string studentId = row["studentid"] == DBNull.Value ? "미등록" : row["studentid"].ToString();
+                string userName = row["username"] == DBNull.Value ? "" : row["username"].ToString();
 
                 card.Controls.Add(new Label { Text = row["ResourceName"].ToString(), Font = Theme.FontBold, ForeColor = Theme.TextPrimary, Location = new Point(14, 12), AutoSize = true });
                 card.Controls.Add(new Label
                 {
-                    Text = $"신청자: {row["userid"]}  |  학번: {studentId}  |  {row["reservationdate"]}  {row["starttime"]} ~ {row["endtime"]}",
+                    Text = $"신청자: {row["userid"]} ({userName})  |  학번: {studentId}  |  {row["reservationdate"]}  {row["starttime"]} ~ {row["endtime"]}",
                     Font = Theme.FontSmall,
                     ForeColor = Theme.TextSecondary,
                     Location = new Point(14, 34),

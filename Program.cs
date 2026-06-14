@@ -2,7 +2,6 @@ using System;
 using System.Windows.Forms;
 using BILCAM.Database;
 using BILCAM.Forms;
-
 namespace BILCAM
 {
     static class Program
@@ -12,10 +11,10 @@ namespace BILCAM
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-
             try
             {
                 DatabaseHelper.Initialize();
+                DatabaseHelper.DeleteExpiredPendingReservations();
                 Application.Run(new LoginForm());
             }
             catch (Exception ex)
