@@ -19,8 +19,8 @@ namespace BILCAM.Forms
 
         private void InitializeComponent()
         {
-            this.Text = "BILCAM — 로그인";
-            this.Size = new Size(420, 600);
+            this.Text = AppLanguage.Get("login_title");
+            this.Size = new Size(420, 620);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Theme.BgSecondary;
             this.FormBorderStyle = FormBorderStyle.FixedSingle;
@@ -29,7 +29,7 @@ namespace BILCAM.Forms
             var pnl = new Panel
             {
                 Width = 360,
-                Height = 500,
+                Height = 520,
                 BackColor = Theme.BgPrimary,
                 Padding = new Padding(30)
             };
@@ -37,12 +37,54 @@ namespace BILCAM.Forms
             pnl.Paint += (s, e) => ControlPaint.DrawBorder(e.Graphics, pnl.ClientRectangle,
                 Theme.Border, ButtonBorderStyle.Solid);
 
-            // 광운대 로고 이미지 (맨 위 가운데)
+            // 언어 선택 버튼 (왼쪽 나란히)
+            var btnKo = new Button
+            {
+                Text = "KO",
+                Font = Theme.FontSmall,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = AppLanguage.Current == "ko" ? Theme.Primary : Theme.BgSecondary,
+                ForeColor = AppLanguage.Current == "ko" ? Color.White : Theme.TextSecondary,
+                Size = new Size(40, 26),
+                Location = new Point(30, 10),
+                Cursor = Cursors.Hand
+            };
+            btnKo.FlatAppearance.BorderSize = 1;
+            btnKo.FlatAppearance.BorderColor = Theme.Border;
+
+            var btnEn = new Button
+            {
+                Text = "EN",
+                Font = Theme.FontSmall,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = AppLanguage.Current == "en" ? Theme.Primary : Theme.BgSecondary,
+                ForeColor = AppLanguage.Current == "en" ? Color.White : Theme.TextSecondary,
+                Size = new Size(40, 26),
+                Location = new Point(74, 10),
+                Cursor = Cursors.Hand
+            };
+            btnEn.FlatAppearance.BorderSize = 1;
+            btnEn.FlatAppearance.BorderColor = Theme.Border;
+
+            btnKo.Click += (s, e) =>
+            {
+                AppLanguage.Current = "ko";
+                this.Controls.Clear();
+                InitializeComponent();
+            };
+            btnEn.Click += (s, e) =>
+            {
+                AppLanguage.Current = "en";
+                this.Controls.Clear();
+                InitializeComponent();
+            };
+
+            // 광운대 로고
             var picLogo = new PictureBox
             {
                 Width = 280,
                 Height = 72,
-                Location = new Point(40, 16),
+                Location = new Point(40, 44),
                 SizeMode = PictureBoxSizeMode.Zoom,
                 BackColor = Color.Transparent
             };
@@ -64,38 +106,38 @@ namespace BILCAM.Forms
                 AutoSize = false,
                 Width = 300,
                 Height = 40,
-                Location = new Point(30, 96),
+                Location = new Point(30, 124),
                 TextAlign = ContentAlignment.MiddleCenter
             };
 
             // 서브타이틀
             var lblSub = new Label
             {
-                Text = "빌려 쓰는 캠퍼스 — 새빛관",
+                Text = AppLanguage.Get("login_sub"),
                 Font = Theme.FontSmall,
                 ForeColor = Theme.TextSecondary,
                 AutoSize = false,
                 Width = 300,
                 Height = 22,
-                Location = new Point(30, 138),
+                Location = new Point(30, 166),
                 TextAlign = ContentAlignment.MiddleCenter
             };
 
             // Divider
-            var div = new Panel { BackColor = Theme.Border, Width = 300, Height = 1, Location = new Point(30, 168) };
+            var div = new Panel { BackColor = Theme.Border, Width = 300, Height = 1, Location = new Point(30, 196) };
 
             // ID field
-            var lblId = new Label { Text = "아이디", Font = Theme.FontSmall, ForeColor = Theme.TextSecondary, Location = new Point(30, 182), AutoSize = true };
+            var lblId = new Label { Text = AppLanguage.Get("login_id"), Font = Theme.FontSmall, ForeColor = Theme.TextSecondary, Location = new Point(30, 210), AutoSize = true };
             txtId = Theme.MakeInput();
             txtId.Width = 300;
-            txtId.Location = new Point(30, 200);
+            txtId.Location = new Point(30, 228);
             txtId.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) txtPw.Focus(); };
 
             // PW field
-            var lblPw = new Label { Text = "비밀번호", Font = Theme.FontSmall, ForeColor = Theme.TextSecondary, Location = new Point(30, 240), AutoSize = true };
+            var lblPw = new Label { Text = AppLanguage.Get("login_pw"), Font = Theme.FontSmall, ForeColor = Theme.TextSecondary, Location = new Point(30, 268), AutoSize = true };
             txtPw = Theme.MakeInput(isPassword: true);
             txtPw.Width = 300;
-            txtPw.Location = new Point(30, 258);
+            txtPw.Location = new Point(30, 286);
             txtPw.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) DoLogin(); };
 
             // Error label
@@ -104,28 +146,28 @@ namespace BILCAM.Forms
                 Text = "",
                 Font = Theme.FontSmall,
                 ForeColor = Theme.Danger,
-                Location = new Point(30, 296),
+                Location = new Point(30, 324),
                 AutoSize = false,
                 Width = 300,
                 Height = 18
             };
 
             // Login button
-            var btnLogin = Theme.MakeButton("로그인", Theme.Primary, Color.White, 300, 40);
-            btnLogin.Location = new Point(30, 318);
+            var btnLogin = Theme.MakeButton(AppLanguage.Get("login_btn"), Theme.Primary, Color.White, 300, 40);
+            btnLogin.Location = new Point(30, 346);
             btnLogin.FlatAppearance.BorderSize = 0;
             btnLogin.Click += (s, e) => DoLogin();
 
             // Register button
-            var btnReg = Theme.MakeButton("회원가입", Theme.BgSecondary, Theme.TextSecondary, 300, 36);
-            btnReg.Location = new Point(30, 366);
+            var btnReg = Theme.MakeButton(AppLanguage.Get("login_register"), Theme.BgSecondary, Theme.TextSecondary, 300, 36);
+            btnReg.Location = new Point(30, 394);
             btnReg.Click += (s, e) =>
             {
                 var reg = new RegisterForm();
                 reg.ShowDialog(this);
             };
 
-            pnl.Controls.AddRange(new Control[] { picLogo, lblLogo, lblSub, div, lblId, txtId, lblPw, txtPw, lblError, btnLogin, btnReg });
+            pnl.Controls.AddRange(new Control[] { btnKo, btnEn, picLogo, lblLogo, lblSub, div, lblId, txtId, lblPw, txtPw, lblError, btnLogin, btnReg });
             this.Controls.Add(pnl);
         }
 
@@ -135,7 +177,7 @@ namespace BILCAM.Forms
             string pw = txtPw.Text.Trim();
             if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(pw))
             {
-                lblError.Text = "아이디와 비밀번호를 입력하세요.";
+                lblError.Text = AppLanguage.Get("login_error_empty");
                 return;
             }
 
@@ -147,7 +189,7 @@ namespace BILCAM.Forms
 
                 if (dt.Rows.Count == 0)
                 {
-                    lblError.Text = "아이디 또는 비밀번호가 올바르지 않습니다.";
+                    lblError.Text = AppLanguage.Get("login_error_fail");
                     return;
                 }
 

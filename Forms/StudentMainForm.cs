@@ -25,7 +25,7 @@ namespace BILCAM.Forms
 
         private void InitializeComponent()
         {
-            this.Text = $"BILCAM — {_user.Name}님 환영합니다";
+            this.Text = $"BILCAM — {_user.Name}";
             this.Size = new Size(800, 640);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Theme.BgTertiary;
@@ -45,14 +45,13 @@ namespace BILCAM.Forms
             };
             var lblUser = new Label
             {
-                Text = $"{_user.Name} 님  |  학생",
+                Text = $"{_user.Name}  |  {AppLanguage.Get("student_role")}",
                 Font = Theme.FontSmall,
                 ForeColor = Theme.TextSecondary,
                 AutoSize = true
             };
             lblUser.Anchor = AnchorStyles.Top | AnchorStyles.Right;
 
-            // 실시간 시계
             var lblClock = new Label
             {
                 Font = Theme.FontSmall,
@@ -64,7 +63,7 @@ namespace BILCAM.Forms
 
             var btnLogout = new Button
             {
-                Text = "로그아웃",
+                Text = AppLanguage.Get("student_logout"),
                 Font = Theme.FontSmall,
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Theme.BgSecondary,
@@ -84,7 +83,6 @@ namespace BILCAM.Forms
                 lblClock.Location = new Point(lblUser.Location.X - lblClock.PreferredWidth - 16, 18);
             };
 
-            // 메인 탭
             _tabs = new TabControl
             {
                 Dock = DockStyle.Fill,
@@ -92,10 +90,9 @@ namespace BILCAM.Forms
                 Padding = new Point(16, 6)
             };
 
-            var tabResources = new TabPage("  자원 조회  ") { BackColor = Theme.BgTertiary, Padding = new Padding(10) };
-            var tabMyRes = new TabPage("  내 예약  ") { BackColor = Theme.BgTertiary, Padding = new Padding(8) };
+            var tabResources = new TabPage(AppLanguage.Get("student_tab_resources")) { BackColor = Theme.BgTertiary, Padding = new Padding(10) };
+            var tabMyRes = new TabPage(AppLanguage.Get("student_tab_myres")) { BackColor = Theme.BgTertiary, Padding = new Padding(8) };
 
-            // 자원 조회 패널
             _pnlResources = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
@@ -106,7 +103,6 @@ namespace BILCAM.Forms
             };
             tabResources.Controls.Add(_pnlResources);
 
-            // 내 예약 서브탭
             _resTabControl = new TabControl
             {
                 Dock = DockStyle.Fill,
@@ -114,11 +110,11 @@ namespace BILCAM.Forms
                 Padding = new Point(12, 5)
             };
 
-            var tabPending = new TabPage("  승인 대기  ") { BackColor = Theme.BgTertiary, Padding = new Padding(6) };
-            var tabApproved = new TabPage("  승인됨  ") { BackColor = Theme.BgTertiary, Padding = new Padding(6) };
-            var tabRejected = new TabPage("  반려됨  ") { BackColor = Theme.BgTertiary, Padding = new Padding(6) };
+            var tabPending = new TabPage(AppLanguage.Get("student_tab_pending")) { BackColor = Theme.BgTertiary, Padding = new Padding(6) };
+            var tabApproved = new TabPage(AppLanguage.Get("student_tab_approved")) { BackColor = Theme.BgTertiary, Padding = new Padding(6) };
+            var tabRejected = new TabPage(AppLanguage.Get("student_tab_rejected")) { BackColor = Theme.BgTertiary, Padding = new Padding(6) };
 
-            _pnlPending = MakeResPanel(); tabPending.Controls.Add(_pnlPending);
+            _pnlPending  = MakeResPanel(); tabPending.Controls.Add(_pnlPending);
             _pnlApproved = MakeResPanel(); tabApproved.Controls.Add(_pnlApproved);
             _pnlRejected = MakeResPanel(); tabRejected.Controls.Add(_pnlRejected);
 
@@ -137,7 +133,6 @@ namespace BILCAM.Forms
             this.Controls.Add(_tabs);
             this.Controls.Add(header);
 
-            // 30초마다 자동 새로고침
             var refreshTimer = new System.Windows.Forms.Timer();
             refreshTimer.Interval = 30000;
             refreshTimer.Tick += (s, e) =>
@@ -147,7 +142,6 @@ namespace BILCAM.Forms
             };
             refreshTimer.Start();
 
-            // 1초마다 시계 업데이트
             var clockTimer = new System.Windows.Forms.Timer();
             clockTimer.Interval = 1000;
             clockTimer.Tick += (s, e) =>
@@ -180,7 +174,9 @@ namespace BILCAM.Forms
                 if (cat != currentCat)
                 {
                     currentCat = cat;
-                    string catName = cat == "classroom" ? "강의실" : cat == "laptop" ? "공용 노트북" : "우산";
+                    string catName = cat == "classroom" ? AppLanguage.Get("student_cat_classroom")
+                                   : cat == "laptop" ? AppLanguage.Get("student_cat_laptop")
+                                   : AppLanguage.Get("student_cat_umbrella");
                     var lbl = new Label
                     {
                         Text = catName,
@@ -223,7 +219,7 @@ namespace BILCAM.Forms
 
             Color dotBg = available ? Theme.SuccessLight : Theme.DangerLight;
             Color dotFg = available ? Theme.Success : Theme.Danger;
-            string statusText = available ? "예약 가능" : "사용 중";
+            string statusText = available ? AppLanguage.Get("student_available") : AppLanguage.Get("student_inuse");
 
             var badge = new Label
             {
@@ -281,21 +277,18 @@ namespace BILCAM.Forms
                 else { _pnlRejected.Controls.Add(card); hasRejected = true; }
             }
 
-            if (!hasPending) _pnlPending.Controls.Add(MakeEmptyLabel("승인 대기 중인 예약이 없습니다."));
-            if (!hasApproved) _pnlApproved.Controls.Add(MakeEmptyLabel("승인된 예약이 없습니다."));
-            if (!hasRejected) _pnlRejected.Controls.Add(MakeEmptyLabel("반려된 예약이 없습니다."));
+            if (!hasPending) _pnlPending.Controls.Add(MakeEmptyLabel(AppLanguage.Get("student_empty_pending")));
+            if (!hasApproved) _pnlApproved.Controls.Add(MakeEmptyLabel(AppLanguage.Get("student_empty_approved")));
+            if (!hasRejected) _pnlRejected.Controls.Add(MakeEmptyLabel(AppLanguage.Get("student_empty_rejected")));
         }
 
         private bool IsPast(DataRow row)
         {
             string dateStr = row["reservationdate"].ToString();
             string endTime = row["endtime"].ToString();
-
             if (!DateTime.TryParse(dateStr, out DateTime date)) return false;
             if (!TimeSpan.TryParse(endTime, out TimeSpan time)) return false;
-
-            DateTime endDateTime = date.Date + time;
-            return DateTime.Now > endDateTime;
+            return DateTime.Now > date.Date + time;
         }
 
         private Panel BuildMyResCard(DataRow row)
@@ -304,17 +297,16 @@ namespace BILCAM.Forms
             string status = row["status"].ToString();
             Color statusBg = status == "pending" ? Theme.WarningLight : status == "approved" ? Theme.SuccessLight : Theme.DangerLight;
             Color statusFg = status == "pending" ? Theme.Warning : status == "approved" ? Theme.Success : Theme.Danger;
-            string statusText = status == "pending" ? "승인 대기" : status == "approved" ? "승인됨" : "반려됨";
+            string statusText = status == "pending" ? AppLanguage.Get("student_status_pending")
+                              : status == "approved" ? AppLanguage.Get("student_status_approved")
+                              : AppLanguage.Get("student_status_rejected");
 
             var pnl = status == "pending" ? _pnlPending : status == "approved" ? _pnlApproved : _pnlRejected;
             int cardWidth = Math.Max(500, pnl.ClientSize.Width - 24);
             bool canCancel = (status == "pending" || status == "approved") && !IsPast(row);
 
-            // 메모 / 반려 사유 확인
-            string memo = (row.Table.Columns.Contains("memo") && row["memo"] != DBNull.Value)
-                ? row["memo"].ToString() : "";
-            string rejectReason = (row.Table.Columns.Contains("rejectreason") && row["rejectreason"] != DBNull.Value)
-                ? row["rejectreason"].ToString() : "";
+            string memo = (row.Table.Columns.Contains("memo") && row["memo"] != DBNull.Value) ? row["memo"].ToString() : "";
+            string rejectReason = (row.Table.Columns.Contains("rejectreason") && row["rejectreason"] != DBNull.Value) ? row["rejectreason"].ToString() : "";
 
             bool hasMemo = !string.IsNullOrWhiteSpace(memo);
             bool hasReject = status == "rejected" && !string.IsNullOrWhiteSpace(rejectReason);
@@ -333,14 +325,12 @@ namespace BILCAM.Forms
             card.Paint += (s, e) => ControlPaint.DrawBorder(e.Graphics, card.ClientRectangle, Theme.Border, ButtonBorderStyle.Solid);
 
             var lblName = new Label { Text = row["ResourceName"].ToString(), Font = Theme.FontBold, ForeColor = Theme.TextPrimary, Location = new Point(14, 12), AutoSize = true };
-
             string startTime = row["starttime"].ToString();
             string detailText = startTime == "00:00"
-                ? $"{row["reservationdate"]}  (하루 대여)"
+                ? $"{row["reservationdate"]}  {AppLanguage.Get("student_daily")}"
                 : $"{row["reservationdate"]}  {row["starttime"]} ~ {row["endtime"]}";
 
             var lblDetail = new Label { Text = detailText, Font = Theme.FontSmall, ForeColor = Theme.TextSecondary, Location = new Point(14, 34), AutoSize = true };
-
             var badge = new Label
             {
                 Text = $"  {statusText}  ",
@@ -358,28 +348,12 @@ namespace BILCAM.Forms
             int lineY = 56;
             if (hasMemo)
             {
-                var lblMemo = new Label
-                {
-                    Text = $"메모: {memo}",
-                    Font = Theme.FontSmall,
-                    ForeColor = Theme.TextMuted,
-                    Location = new Point(14, lineY),
-                    AutoSize = true
-                };
-                card.Controls.Add(lblMemo);
+                card.Controls.Add(new Label { Text = AppLanguage.Get("student_memo") + memo, Font = Theme.FontSmall, ForeColor = Theme.TextMuted, Location = new Point(14, lineY), AutoSize = true });
                 lineY += 22;
             }
             if (hasReject)
             {
-                var lblReject = new Label
-                {
-                    Text = $"반려 사유: {rejectReason}",
-                    Font = Theme.FontSmall,
-                    ForeColor = Theme.Danger,
-                    Location = new Point(14, lineY),
-                    AutoSize = true
-                };
-                card.Controls.Add(lblReject);
+                card.Controls.Add(new Label { Text = AppLanguage.Get("student_reject_reason") + rejectReason, Font = Theme.FontSmall, ForeColor = Theme.Danger, Location = new Point(14, lineY), AutoSize = true });
                 lineY += 22;
             }
 
@@ -387,19 +361,19 @@ namespace BILCAM.Forms
             {
                 var btnCancel = new Button
                 {
-                    Text = "예약 취소",
+                    Text = AppLanguage.Get("student_cancel"),
                     Font = Theme.FontSmall,
                     FlatStyle = FlatStyle.Flat,
                     BackColor = Theme.BgSecondary,
                     ForeColor = Theme.Danger,
-                    Size = new Size(72, 24),
+                    Size = new Size(80, 24),
                     Location = new Point(14, lineY),
                     Cursor = Cursors.Hand
                 };
                 btnCancel.FlatAppearance.BorderColor = Theme.DangerLight;
                 btnCancel.Click += (s, e) =>
                 {
-                    if (MessageBox.Show("예약을 취소하시겠습니까?", "확인", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                    if (MessageBox.Show(AppLanguage.Get("student_cancel_confirm"), "BILCAM", MessageBoxButtons.YesNo) == DialogResult.Yes)
                     {
                         DatabaseHelper.ExecuteNonQuery($"DELETE FROM reservations WHERE id={id}");
                         LoadMyReservations();

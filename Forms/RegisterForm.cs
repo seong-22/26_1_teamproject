@@ -17,7 +17,7 @@ namespace BILCAM.Forms
 
         private void InitializeComponent()
         {
-            this.Text = "BILCAM — 회원가입";
+            this.Text = AppLanguage.Get("register_title");
             this.Size = new Size(420, 560);
             this.StartPosition = FormStartPosition.CenterParent;
             this.BackColor = Theme.BgSecondary;
@@ -34,24 +34,24 @@ namespace BILCAM.Forms
             };
             pnl.Paint += (s, e) => ControlPaint.DrawBorder(e.Graphics, pnl.ClientRectangle, Theme.Border, ButtonBorderStyle.Solid);
 
-            var lblTitle = new Label { Text = "회원가입", Font = Theme.FontHeader, ForeColor = Theme.TextPrimary, Location = new Point(30, 20), AutoSize = true };
+            var lblTitle = new Label { Text = AppLanguage.Get("register_header"), Font = Theme.FontHeader, ForeColor = Theme.TextPrimary, Location = new Point(30, 20), AutoSize = true };
 
             int y = 60;
-            txtId       = AddField(pnl, "아이디", ref y);
-            txtPw       = AddField(pnl, "비밀번호", ref y, true);
-            txtPw2      = AddField(pnl, "비밀번호 확인", ref y, true);
-            txtName     = AddField(pnl, "이름", ref y);
-            txtStudentId = AddField(pnl, "학번", ref y);
+            txtId        = AddField(pnl, AppLanguage.Get("register_id"), ref y);
+            txtPw        = AddField(pnl, AppLanguage.Get("register_pw"), ref y, true);
+            txtPw2       = AddField(pnl, AppLanguage.Get("register_pw2"), ref y, true);
+            txtName      = AddField(pnl, AppLanguage.Get("register_name"), ref y);
+            txtStudentId = AddField(pnl, AppLanguage.Get("register_studentid"), ref y);
 
             lblError = new Label { Text = "", Font = Theme.FontSmall, ForeColor = Theme.Danger, Location = new Point(30, y), AutoSize = false, Width = 300, Height = 20 };
             y += 24;
 
-            var btnSubmit = Theme.MakeButton("가입 완료", Theme.Primary, Color.White, 300, 38);
+            var btnSubmit = Theme.MakeButton(AppLanguage.Get("register_submit"), Theme.Primary, Color.White, 300, 38);
             btnSubmit.Location = new Point(30, y);
             btnSubmit.FlatAppearance.BorderSize = 0;
             btnSubmit.Click += DoRegister;
 
-            var btnBack = Theme.MakeButton("취소", Theme.BgSecondary, Theme.TextSecondary, 300, 32);
+            var btnBack = Theme.MakeButton(AppLanguage.Get("register_cancel"), Theme.BgSecondary, Theme.TextSecondary, 300, 32);
             btnBack.Location = new Point(30, y + 44);
             btnBack.Click += (s, e) => this.Close();
 
@@ -81,28 +81,25 @@ namespace BILCAM.Forms
             string studentId = txtStudentId.Text.Trim();
 
             if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(pw) || string.IsNullOrEmpty(name) || string.IsNullOrEmpty(studentId))
-            { lblError.Text = "모든 항목을 입력하세요."; return; }
+            { lblError.Text = AppLanguage.Get("register_err_empty"); return; }
 
             if (pw != pw2)
-            { lblError.Text = "비밀번호가 일치하지 않습니다."; return; }
+            { lblError.Text = AppLanguage.Get("register_err_pw"); return; }
 
             if (pw.Length < 8)
-            { lblError.Text = "비밀번호는 8자 이상 입력하세요."; return; }
+            { lblError.Text = AppLanguage.Get("register_err_pwlen"); return; }
 
-            // 학번 숫자 확인
             if (!System.Text.RegularExpressions.Regex.IsMatch(studentId, @"^\d+$"))
-            { lblError.Text = "학번은 숫자만 입력하세요."; return; }
+            { lblError.Text = AppLanguage.Get("register_err_studentid"); return; }
 
-            // 아이디 중복 확인
-            var dt = DatabaseHelper.ExecuteQuery(
-                $"SELECT id FROM users WHERE userid='{id}'");
+            var dt = DatabaseHelper.ExecuteQuery($"SELECT id FROM users WHERE userid='{id}'");
             if (dt.Rows.Count > 0)
-            { lblError.Text = "이미 사용 중인 아이디입니다."; return; }
+            { lblError.Text = AppLanguage.Get("register_err_dup"); return; }
 
             DatabaseHelper.ExecuteNonQuery(
                 $"INSERT INTO users (userid, passwordhash, name, role, studentid) VALUES ('{id}', '{DatabaseHelper.HashPassword(pw)}', '{name}', 'student', '{studentId}')");
 
-            MessageBox.Show("회원가입이 완료되었습니다!", "BILCAM", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show(AppLanguage.Get("register_success"), "BILCAM", MessageBoxButtons.OK, MessageBoxIcon.Information);
             this.Close();
         }
     }

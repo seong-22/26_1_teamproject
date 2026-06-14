@@ -30,11 +30,10 @@ namespace BILCAM.Forms
             this.AutoScaleMode = AutoScaleMode.Dpi;
             this.AutoScaleDimensions = new SizeF(96F, 96F);
 
-            // Header
             var header = new Panel { Dock = DockStyle.Top, Height = 52, BackColor = Color.FromArgb(139, 30, 20) };
             var lblTitle = new Label
             {
-                Text = "BILCAM  관리자 패널",
+                Text = AppLanguage.Get("admin_title"),
                 Font = new Font("맑은 고딕", 14f, FontStyle.Bold),
                 ForeColor = Color.White,
                 Location = new Point(20, 14),
@@ -52,7 +51,7 @@ namespace BILCAM.Forms
 
             var btnLogout = new Button
             {
-                Text = "로그아웃",
+                Text = AppLanguage.Get("admin_logout"),
                 Font = Theme.FontSmall,
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(139, 30, 20),
@@ -74,9 +73,9 @@ namespace BILCAM.Forms
 
             _tabs = new TabControl { Dock = DockStyle.Fill, Font = Theme.FontBody, Padding = new Point(16, 6) };
 
-            var tabPending = new TabPage("  승인 대기  ") { BackColor = Theme.BgTertiary, Padding = new Padding(10) };
-            var tabAll = new TabPage("  전체 예약  ") { BackColor = Theme.BgTertiary, Padding = new Padding(10) };
-            var tabItems = new TabPage("  자원 관리  ") { BackColor = Theme.BgTertiary, Padding = new Padding(10) };
+            var tabPending = new TabPage(AppLanguage.Get("admin_tab_pending")) { BackColor = Theme.BgTertiary, Padding = new Padding(10) };
+            var tabAll = new TabPage(AppLanguage.Get("admin_tab_all")) { BackColor = Theme.BgTertiary, Padding = new Padding(10) };
+            var tabItems = new TabPage(AppLanguage.Get("admin_tab_items")) { BackColor = Theme.BgTertiary, Padding = new Padding(10) };
 
             _pnlPending = MakeFlowPanel(); tabPending.Controls.Add(_pnlPending);
             _pnlAll     = MakeFlowPanel(); tabAll.Controls.Add(_pnlAll);
@@ -134,7 +133,7 @@ namespace BILCAM.Forms
 
             if (dt.Rows.Count == 0)
             {
-                _pnlPending.Controls.Add(MakeEmptyLabel("승인 대기 중인 예약이 없습니다."));
+                _pnlPending.Controls.Add(MakeEmptyLabel(AppLanguage.Get("admin_empty_pending")));
                 return;
             }
 
@@ -159,18 +158,18 @@ namespace BILCAM.Forms
             var lblName = new Label { Text = row["ResourceName"].ToString(), Font = Theme.FontBold, ForeColor = Theme.TextPrimary, Location = new Point(14, 12), AutoSize = true };
 
             string studentId = row["studentid"] == DBNull.Value ? "미등록" : row["studentid"].ToString();
-            string userName = row["username"] == DBNull.Value ? "" : row["username"].ToString();
+            string userName = row["username"]  == DBNull.Value ? "" : row["username"].ToString();
 
             var lblDetail = new Label
             {
-                Text = $"신청자: {row["userid"]} ({userName})  |  학번: {studentId}  |  {row["reservationdate"]}  {row["starttime"]} ~ {row["endtime"]}",
+                Text = $"{AppLanguage.Get("admin_applicant")}{row["userid"]} ({userName})  |  {AppLanguage.Get("admin_studentid")}{studentId}  |  {row["reservationdate"]}  {row["starttime"]} ~ {row["endtime"]}",
                 Font = Theme.FontSmall,
                 ForeColor = Theme.TextSecondary,
                 Location = new Point(14, 34),
                 AutoSize = true
             };
 
-            var badge = new Label { Text = "  대기  ", Font = Theme.FontSmall, BackColor = Theme.WarningLight, ForeColor = Theme.Warning, AutoSize = true, BorderStyle = BorderStyle.FixedSingle, Location = new Point(cardW - 80, 12) };
+            var badge = new Label { Text = AppLanguage.Get("admin_status_pending"), Font = Theme.FontSmall, BackColor = Theme.WarningLight, ForeColor = Theme.Warning, AutoSize = true, BorderStyle = BorderStyle.FixedSingle, Location = new Point(cardW - 80, 12) };
             badge.Anchor = AnchorStyles.Top | AnchorStyles.Right;
 
             card.Controls.AddRange(new Control[] { lblName, lblDetail, badge });
@@ -178,24 +177,16 @@ namespace BILCAM.Forms
             int btnY = 56;
             if (hasMemo)
             {
-                var lblMemo = new Label
-                {
-                    Text = $"메모: {memo}",
-                    Font = Theme.FontSmall,
-                    ForeColor = Theme.TextMuted,
-                    Location = new Point(14, 56),
-                    AutoSize = true
-                };
-                card.Controls.Add(lblMemo);
+                card.Controls.Add(new Label { Text = AppLanguage.Get("admin_memo") + memo, Font = Theme.FontSmall, ForeColor = Theme.TextMuted, Location = new Point(14, 56), AutoSize = true });
                 btnY = 80;
             }
 
-            var btnApprove = Theme.MakeButton("승인", Theme.SuccessLight, Theme.Success, 80, 28);
+            var btnApprove = Theme.MakeButton(AppLanguage.Get("admin_approve"), Theme.SuccessLight, Theme.Success, 80, 28);
             btnApprove.FlatAppearance.BorderColor = Color.FromArgb(93, 202, 165);
             btnApprove.Location = new Point(14, btnY);
             btnApprove.Click += (s, e) => { UpdateStatus(resId, "approved"); LoadPending(); };
 
-            var btnReject = Theme.MakeButton("반려", Theme.DangerLight, Theme.Danger, 80, 28);
+            var btnReject = Theme.MakeButton(AppLanguage.Get("admin_reject"), Theme.DangerLight, Theme.Danger, 80, 28);
             btnReject.FlatAppearance.BorderColor = Color.FromArgb(240, 149, 123);
             btnReject.Location = new Point(100, btnY);
             btnReject.Click += (s, e) => { RejectWithReason(resId); };
@@ -204,12 +195,11 @@ namespace BILCAM.Forms
             return card;
         }
 
-        // 반려 사유 입력 다이얼로그
         private void RejectWithReason(int reservationId)
         {
             using (var dlg = new Form())
             {
-                dlg.Text = "반려 사유 입력";
+                dlg.Text = AppLanguage.Get("admin_reject_title");
                 dlg.Size = new Size(400, 220);
                 dlg.StartPosition = FormStartPosition.CenterParent;
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -217,14 +207,7 @@ namespace BILCAM.Forms
                 dlg.MinimizeBox = false;
                 dlg.BackColor = Theme.BgPrimary;
 
-                var lbl = new Label
-                {
-                    Text = "반려 사유를 입력해주세요. (선택)",
-                    Font = Theme.FontBody,
-                    ForeColor = Theme.TextPrimary,
-                    Location = new Point(20, 20),
-                    AutoSize = true
-                };
+                var lbl = new Label { Text = AppLanguage.Get("admin_reject_label"), Font = Theme.FontBody, ForeColor = Theme.TextPrimary, Location = new Point(20, 20), AutoSize = true };
 
                 var txtReason = new TextBox
                 {
@@ -237,7 +220,7 @@ namespace BILCAM.Forms
                     MaxLength = 200
                 };
 
-                var btnOk = Theme.MakeButton("반려 처리", Theme.Danger, Color.White, 160, 36);
+                var btnOk = Theme.MakeButton(AppLanguage.Get("admin_reject_ok"), Theme.Danger, Color.White, 160, 36);
                 btnOk.FlatAppearance.BorderSize = 0;
                 btnOk.Location = new Point(20, 130);
                 btnOk.Click += (s, e) =>
@@ -249,7 +232,7 @@ namespace BILCAM.Forms
                     dlg.Close();
                 };
 
-                var btnCancel = Theme.MakeButton("취소", Theme.BgSecondary, Theme.TextSecondary, 100, 36);
+                var btnCancel = Theme.MakeButton(AppLanguage.Get("admin_reject_cancel"), Theme.BgSecondary, Theme.TextSecondary, 100, 36);
                 btnCancel.Location = new Point(190, 130);
                 btnCancel.Click += (s, e) => { dlg.DialogResult = DialogResult.Cancel; dlg.Close(); };
 
@@ -271,19 +254,19 @@ namespace BILCAM.Forms
                   LEFT JOIN users u ON r.userid = u.userid
                   ORDER BY r.reservationdate DESC");
 
-            if (dt.Rows.Count == 0) { _pnlAll.Controls.Add(MakeEmptyLabel("예약 내역이 없습니다.")); return; }
+            if (dt.Rows.Count == 0) { _pnlAll.Controls.Add(MakeEmptyLabel(AppLanguage.Get("admin_empty_all"))); return; }
 
             foreach (DataRow row in dt.Rows)
             {
                 string status = row["status"].ToString();
-                string statusText = status == "pending" ? "대기" : status == "approved" ? "승인" : "반려";
+                string statusText = status == "pending" ? AppLanguage.Get("admin_status_pending")
+                                  : status == "approved" ? AppLanguage.Get("admin_status_approved")
+                                  : AppLanguage.Get("admin_status_rejected");
                 Color bg = status == "pending" ? Theme.WarningLight : status == "approved" ? Theme.SuccessLight : Theme.DangerLight;
                 Color fg = status == "pending" ? Theme.Warning : status == "approved" ? Theme.Success : Theme.Danger;
 
-                string memo = (row.Table.Columns.Contains("memo") && row["memo"] != DBNull.Value)
-                    ? row["memo"].ToString() : "";
-                string rejectReason = (row.Table.Columns.Contains("rejectreason") && row["rejectreason"] != DBNull.Value)
-                    ? row["rejectreason"].ToString() : "";
+                string memo = (row.Table.Columns.Contains("memo") && row["memo"] != DBNull.Value) ? row["memo"].ToString() : "";
+                string rejectReason = (row.Table.Columns.Contains("rejectreason") && row["rejectreason"] != DBNull.Value) ? row["rejectreason"].ToString() : "";
 
                 bool hasMemo = !string.IsNullOrWhiteSpace(memo);
                 bool hasReject = status == "rejected" && !string.IsNullOrWhiteSpace(rejectReason);
@@ -295,28 +278,28 @@ namespace BILCAM.Forms
                 card.Paint += (s, e) => ControlPaint.DrawBorder(e.Graphics, card.ClientRectangle, Theme.Border, ButtonBorderStyle.Solid);
 
                 string studentId = row["studentid"] == DBNull.Value ? "미등록" : row["studentid"].ToString();
-                string userName = row["username"] == DBNull.Value ? "" : row["username"].ToString();
+                string userName = row["username"]  == DBNull.Value ? "" : row["username"].ToString();
 
                 card.Controls.Add(new Label { Text = row["ResourceName"].ToString(), Font = Theme.FontBold, ForeColor = Theme.TextPrimary, Location = new Point(14, 12), AutoSize = true });
                 card.Controls.Add(new Label
                 {
-                    Text = $"신청자: {row["userid"]} ({userName})  |  학번: {studentId}  |  {row["reservationdate"]}  {row["starttime"]} ~ {row["endtime"]}",
+                    Text = $"{AppLanguage.Get("admin_applicant")}{row["userid"]} ({userName})  |  {AppLanguage.Get("admin_studentid")}{studentId}  |  {row["reservationdate"]}  {row["starttime"]} ~ {row["endtime"]}",
                     Font = Theme.FontSmall,
                     ForeColor = Theme.TextSecondary,
                     Location = new Point(14, 34),
                     AutoSize = true
                 });
-                card.Controls.Add(new Label { Text = $"  {statusText}  ", Font = Theme.FontSmall, BackColor = bg, ForeColor = fg, AutoSize = true, BorderStyle = BorderStyle.FixedSingle, Location = new Point(cardW - 72, 12), Anchor = AnchorStyles.Top | AnchorStyles.Right });
+                card.Controls.Add(new Label { Text = statusText, Font = Theme.FontSmall, BackColor = bg, ForeColor = fg, AutoSize = true, BorderStyle = BorderStyle.FixedSingle, Location = new Point(cardW - 80, 12), Anchor = AnchorStyles.Top | AnchorStyles.Right });
 
                 int lineY = 56;
                 if (hasMemo)
                 {
-                    card.Controls.Add(new Label { Text = $"메모: {memo}", Font = Theme.FontSmall, ForeColor = Theme.TextMuted, Location = new Point(14, lineY), AutoSize = true });
+                    card.Controls.Add(new Label { Text = AppLanguage.Get("admin_memo") + memo, Font = Theme.FontSmall, ForeColor = Theme.TextMuted, Location = new Point(14, lineY), AutoSize = true });
                     lineY += 22;
                 }
                 if (hasReject)
                 {
-                    card.Controls.Add(new Label { Text = $"반려 사유: {rejectReason}", Font = Theme.FontSmall, ForeColor = Theme.Danger, Location = new Point(14, lineY), AutoSize = true });
+                    card.Controls.Add(new Label { Text = AppLanguage.Get("admin_reject_reason") + rejectReason, Font = Theme.FontSmall, ForeColor = Theme.Danger, Location = new Point(14, lineY), AutoSize = true });
                     lineY += 22;
                 }
 
@@ -329,7 +312,7 @@ namespace BILCAM.Forms
         {
             _pnlItems.Controls.Clear();
 
-            var btnAdd = Theme.MakeButton("+ 새 자원 추가", Theme.Primary, Color.White, 160, 34);
+            var btnAdd = Theme.MakeButton(AppLanguage.Get("admin_add_resource"), Theme.Primary, Color.White, 160, 34);
             btnAdd.FlatAppearance.BorderSize = 0;
             btnAdd.Margin = new Padding(2, 0, 2, 10);
             btnAdd.Click += (s, e) =>
@@ -358,7 +341,7 @@ namespace BILCAM.Forms
 
             var badge = new Label
             {
-                Text = avail ? " 사용 가능 " : "  사용 불가  ",
+                Text = avail ? AppLanguage.Get("admin_available") : AppLanguage.Get("admin_unavailable"),
                 Font = Theme.FontSmall,
                 BackColor = avail ? Theme.SuccessLight : Theme.DangerLight,
                 ForeColor = avail ? Theme.Success : Theme.Danger,
@@ -368,7 +351,7 @@ namespace BILCAM.Forms
                 Anchor = AnchorStyles.Top | AnchorStyles.Right
             };
 
-            var btnToggle = Theme.MakeButton(avail ? "사용 불가로 변경" : "사용 가능으로 변경", Theme.BgSecondary, Theme.TextSecondary, 160, 26);
+            var btnToggle = Theme.MakeButton(avail ? AppLanguage.Get("admin_set_unavailable") : AppLanguage.Get("admin_set_available"), Theme.BgSecondary, Theme.TextSecondary, 160, 26);
             btnToggle.Location = new Point(14, 48);
             btnToggle.Click += (s, e) =>
             {
