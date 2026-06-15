@@ -389,7 +389,6 @@ namespace BILCAM.Forms
                 bool taken = _takenSlots.Contains(slot);
                 bool selected = slot == _selectedSlot;
 
-                // 오늘 날짜인 경우 현재 시간 이전 슬롯 비활성화
                 bool isPastSlot = _selectedDate.Date == DateTime.Today &&
                     int.Parse(slot.Split(':')[0]) <= DateTime.Now.Hour;
                 taken = taken || isPastSlot;

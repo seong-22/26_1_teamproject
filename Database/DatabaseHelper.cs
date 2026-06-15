@@ -79,7 +79,7 @@ namespace BILCAM.Database
                 return sb.ToString();
             }
         }
-        //예약 자동 삭제 함수
+
         public static void DeleteExpiredPendingReservations()
         {
             ExecuteNonQuery(

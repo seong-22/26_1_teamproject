@@ -82,7 +82,6 @@ namespace BILCAM.Forms
             _pnlPending = MakeFlowPanel(); tabPending.Controls.Add(_pnlPending);
             _pnlItems   = MakeFlowPanel(); tabItems.Controls.Add(_pnlItems);
 
-            // 전체 예약 서브탭
             _allTabControl = new TabControl
             {
                 Dock = DockStyle.Fill,
@@ -142,7 +141,6 @@ namespace BILCAM.Forms
             Padding = new Padding(4)
         };
 
-        // ── Pending ─────────────────────────────────────────────────────────
         private void LoadPending()
         {
             _pnlPending.Controls.Clear();
@@ -265,7 +263,6 @@ namespace BILCAM.Forms
             }
         }
 
-        // ── All reservations (서브탭) ────────────────────────────────────────
         private void LoadAll()
         {
             _pnlAllPending.Controls.Clear();
@@ -347,7 +344,6 @@ namespace BILCAM.Forms
             return card;
         }
 
-        // ── Items management ────────────────────────────────────────────────
         private void LoadItems()
         {
             _pnlItems.Controls.Clear();
@@ -422,7 +418,6 @@ namespace BILCAM.Forms
             return card;
         }
 
-        // ── Helpers ─────────────────────────────────────────────────────────
         private void UpdateStatus(int id, string status)
         {
             DatabaseHelper.ExecuteNonQuery($"UPDATE reservations SET status='{status}' WHERE id={id}");

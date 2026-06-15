@@ -37,7 +37,7 @@ namespace BILCAM.Forms
             pnl.Paint += (s, e) => ControlPaint.DrawBorder(e.Graphics, pnl.ClientRectangle,
                 Theme.Border, ButtonBorderStyle.Solid);
 
-            // 언어 선택 버튼 (왼쪽 나란히)
+            // 언어 선택 버튼
             var btnKo = new Button
             {
                 Text = "KO",

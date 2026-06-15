@@ -31,7 +31,6 @@ namespace BILCAM.Forms
             this.BackColor = Theme.BgTertiary;
             this.MinimumSize = new Size(700, 560);
 
-            // Header
             var header = new Panel { Dock = DockStyle.Top, Height = 52, BackColor = Theme.BgPrimary };
             header.Paint += (s, e) => e.Graphics.DrawLine(new Pen(Theme.Border), 0, 51, header.Width, 51);
 
@@ -161,7 +160,6 @@ namespace BILCAM.Forms
             Padding = new Padding(4)
         };
 
-        // ── Resources ──────────────────────────────────────────────────────
         private void LoadResources()
         {
             _pnlResources.Controls.Clear();
@@ -254,7 +252,6 @@ namespace BILCAM.Forms
             LoadResources();
         }
 
-        // ── My Reservations ────────────────────────────────────────────────
         private void LoadMyReservations()
         {
             _pnlPending.Controls.Clear();

@@ -18,15 +18,15 @@ namespace BILCAM.Forms
         private void InitializeComponent()
         {
             this.Text = "새 자원 추가";
-            this.Size = new Size(380, 360);  // 수정: 320 → 360 (버튼 잘림 방지)
+            this.Size = new Size(380, 360); 
             this.StartPosition = FormStartPosition.CenterParent;
             this.BackColor = Theme.BgSecondary;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
-            this.AutoScaleMode = AutoScaleMode.Dpi;  // 추가: DPI 대응
+            this.AutoScaleMode = AutoScaleMode.Dpi;
             this.AutoScaleDimensions = new SizeF(96F, 96F);
 
-            var pnl = new Panel { Width = 320, Height = 280, Location = new Point(30, 20), BackColor = Theme.BgPrimary, Padding = new Padding(20) };  // 수정: 240 → 280
+            var pnl = new Panel { Width = 320, Height = 280, Location = new Point(30, 20), BackColor = Theme.BgPrimary, Padding = new Padding(20) }; 
             pnl.Paint += (s, e) => ControlPaint.DrawBorder(e.Graphics, pnl.ClientRectangle, Theme.Border, ButtonBorderStyle.Solid);
 
             int y = 16;
